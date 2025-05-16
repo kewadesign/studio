@@ -21,7 +21,7 @@ export interface Square {
   col: number;
   terrain: TerrainType;
   pieceId?: string | null;
-  riftDirection?: RiftDirection; 
+  riftDirection?: RiftDirection;
 }
 
 export type Board = Square[][];
@@ -43,7 +43,8 @@ export interface GameState {
   playerTwoName: string; // Human (Black, Bottom)
   humanCapturedAIScore: CapturedPieces; // Pieces AI (White) lost, captured by Human (Black)
   aiCapturedHumanScore: CapturedPieces;   // Pieces Human (Black) lost, captured by AI (White)
-  lionMovedLastTurn: PlayerType | null; 
+  lionMovedLastTurn: PlayerType | null;
+  swampSkipTurnForPiece: { pieceId: string; player: PlayerType } | null; // Piece that landed on swamp and must skip its owner's next turn
   isGameOver: boolean;
   message: string;
 }
@@ -51,11 +52,8 @@ export interface GameState {
 export const BOARD_SIZE = 7;
 
 // Number of random terrains to place.
-// These will be placed on rows 2, 3, 4 (0-indexed middle rows).
+// These will be placed on rows 2, 3, 4 (0-indexed middle rows for a 7x7 board).
 // They will not be placed on starting rows (0,1 for AI; 5,6 for Human).
-export const NUM_RANDOM_SWAMPS = 3; 
-export const NUM_RANDOM_HILLS = 2;  
-export const NUM_RANDOM_RIFTS = 2;  
-    
-
-    
+export const NUM_RANDOM_SWAMPS = 3;
+export const NUM_RANDOM_HILLS = 2;
+export const NUM_RANDOM_RIFTS = 2;

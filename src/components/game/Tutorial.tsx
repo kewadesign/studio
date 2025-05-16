@@ -19,15 +19,15 @@ const tutorialSteps = [
   {
     icon: <Shield className="inline-block mr-2 text-red-500" />,
     title: 'Der Löwe (L)',
-    content: 'Der Löwe ist dein König! Er zieht 1, 2 oder 3 Felder in jede Richtung (gerade oder diagonal). Nach einem Zug muss er eine Runde aussetzen.',
+    content: 'Der Löwe ist dein König! Er zieht 1 oder 2 Felder in jede Richtung (gerade oder diagonal). Nach einem Zug muss er eine Runde aussetzen.',
   },
   {
     icon: <TrendingUp className="inline-block mr-2 text-blue-500" />,
     title: 'Die Giraffe (G)',
-    content: 'Die Giraffe zieht bis zu 2 Felder, aber nur geradeaus (nicht diagonal). Sie darf keine Hügel (H) betreten.',
+    content: 'Die Giraffe zieht bis zu 2 Felder, aber nur geradeaus (nicht diagonal). Sie darf keine Hügel (H) und keine Sümpfe (S) betreten.',
   },
   {
-    icon: <Sparkles className="inline-block mr-2 text-green-500" />, // Using Sparkles again for Gazelle
+    icon: <Sparkles className="inline-block mr-2 text-green-500" />,
     title: 'Die Gazelle (Z)',
     content: 'Die Gazelle zieht 1 Feld gerade vorwärts. Zum Schlagen springt sie 1 Feld diagonal vorwärts. Gazellen können keine Löwen fangen!',
   },
@@ -39,7 +39,7 @@ const tutorialSteps = [
   {
     icon: <Waves className="inline-block mr-2 text-emerald-600" />,
     title: 'Spezialfeld: Sumpf (S)',
-    content: 'Sümpfe (S) sind im Moment ganz normale Felder ohne besondere Regeln.',
+    content: 'Betritt ein Löwe oder eine Gazelle einen Sumpf (S), müssen sie in ihrem nächsten Zug aussetzen. Giraffen dürfen Sümpfe gar nicht erst betreten!',
   },
   {
     icon: <Wind className="inline-block mr-2 text-destructive" />,
@@ -105,5 +105,3 @@ const Tutorial: React.FC<TutorialProps> = ({ onStartGame }) => {
 };
 
 export default Tutorial;
-
-    
