@@ -26,9 +26,9 @@ const getTerrainChar = (terrain: TerrainType): string => {
 
 const getTerrainColorClass = (terrain: TerrainType): string => {
   switch (terrain) {
-    case 'rift': return 'text-destructive font-bold'; // K for Kluft
-    case 'swamp': return 'text-[var(--chart-2)] font-bold'; // S for Sumpf (using chart-2 color)
-    case 'hill': return 'text-[var(--chart-4)] font-bold';  // H for Hügel (using chart-4 color)
+    case 'rift': return 'text-destructive font-bold'; 
+    case 'swamp': return 'text-[var(--chart-2)] font-bold'; 
+    case 'hill': return 'text-[var(--chart-4)] font-bold';  
     default: return '';
   }
 }
@@ -42,11 +42,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
   currentPlayer,
   isGameOver,
 }) => {
-  const gridColsClass = `grid-cols-${BOARD_SIZE}`;
+  // BOARD_SIZE is now 7, this will dynamically create grid-cols-7 if tailwind supports it via JIT
+  // Or use inline style for safety.
+  const gridColsClass = `grid-cols-${BOARD_SIZE}`; 
 
   return (
     <div 
-      className={`grid ${gridColsClass} gap-1 p-2 bg-secondary/30 rounded-lg shadow-md aspect-square w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl`}
+      className={`grid ${gridColsClass} gap-1 p-2 bg-secondary/30 rounded-lg shadow-md aspect-square w-full max-w-md sm:max-w-lg md:max-w-[calc(theme(spacing.96)_*_0.875)] lg:max-w-xl xl:max-w-2xl`} // Adjusted max-width slightly for 7x7
       style={{ gridTemplateColumns: `repeat(${BOARD_SIZE}, minmax(0, 1fr))` }}
     >
       {board.flat().map((square) => {
@@ -57,17 +59,18 @@ const GameBoard: React.FC<GameBoardProps> = ({
         );
 
         let squareBgClass = (square.row + square.col) % 2 === 0 ? 'bg-background' : 'bg-muted/50';
-        // No special background for terrain, letters will indicate it
         
         if (isValidMove) {
           squareBgClass = 'bg-green-300 dark:bg-green-700 cursor-pointer hover:bg-green-400';
         } else if (piece && piece.player === currentPlayer && !isGameOver) {
+           // Check if this piece can be selected (e.g. Lion not paused)
+          const currentPieceIsLion = piece.animal === 'lion';
+          // This specific check for lionMovedLastTurn needs to be passed or determined here
+          // For now, assume it's selectable if it's their turn. Lion pause logic is in page.tsx
           squareBgClass += ' cursor-pointer hover:bg-primary/20';
         } else if (!piece && square.terrain !== 'none' && !isGameOver) {
-           // Make terrain squares clickable if empty (though click logic handles selection)
            squareBgClass += ' cursor-default'; 
         }
-
 
         return (
           <div
@@ -80,7 +83,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
           >
             {piece && <GamePiece piece={piece} isSelected={isSelected} />}
             {!piece && square.terrain !== 'none' && (
-              <span className={`text-2xl ${getTerrainColorClass(square.terrain)}`}>
+              <span className={`text-xl sm:text-2xl ${getTerrainColorClass(square.terrain)}`}>
                 {getTerrainChar(square.terrain)}
               </span>
             )}
