@@ -1,6 +1,7 @@
+
 import React from 'react';
 import type { AnimalType, PlayerType } from '@/types/game';
-import { Cat, Sparkles, Crown, HelpCircle } from 'lucide-react'; 
+import { Cat, Crown, HelpCircle } from 'lucide-react'; 
 
 interface CustomSVGProps extends React.SVGProps<SVGSVGElement> {
   size?: number;
@@ -53,13 +54,13 @@ const GiraffeSVG: React.FC<CustomSVGProps> = ({ size = 24, className, ...rest })
 interface AnimalIconProps {
   animal?: AnimalType;
   player?: PlayerType;
-  type: 'animal' | 'rift' | 'crown';
+  type: 'animal' | 'crown'; // Removed 'rift' as it's handled differently now
   size?: number;
   className?: string; 
 }
 
 const AnimalIcon: React.FC<AnimalIconProps> = ({ animal, player, type, size = 24, className: passedInClassName }) => {
-  const baseStrokeWidth = size && size < 24 ? 'stroke-[2]' : 'stroke-[1.5]'; // Thicker stroke for smaller icons
+  const baseStrokeWidth = size && size < 24 ? 'stroke-[2]' : 'stroke-[1.5]';
   const iconProps = {
     size,
     className: cn(
@@ -69,18 +70,15 @@ const AnimalIcon: React.FC<AnimalIconProps> = ({ animal, player, type, size = 24
     ),
   };
 
-  if (type === 'rift') {
-    return <Sparkles {...iconProps} className={cn('text-purple-500', passedInClassName)} />;
-  }
   if (type === 'crown') {
-    return <Crown {...iconProps} className={cn('text-yellow-500', passedInClassName)} />;
+    return <Crown {...iconProps} className={cn('text-yellow-500', passedInClassName)} />; // Ensure Award icon or similar is used if Crown is not ideal
   }
 
   if (!animal) return <HelpCircle {...iconProps} className={cn('text-muted-foreground', passedInClassName)} />;
 
   switch (animal) {
     case 'lion':
-      return <Cat {...iconProps} />; // Still using Cat for Lion
+      return <Cat {...iconProps} />; 
     case 'goat':
       return <GoatSVG {...iconProps} />;
     case 'giraffe':

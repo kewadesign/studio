@@ -1,22 +1,19 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import GameBoard from '@/components/game/GameBoard';
-import type { GameState, Piece, Board, PlayerType, AnimalType } from '@/types/game';
-import { BOARD_SIZE, RIFT_POSITION } from '@/types/game';
+import type { GameState, Piece, Board, PlayerType, AnimalType, Square, TerrainType } from '@/types/game';
+import { BOARD_SIZE, TERRAIN_POSITIONS } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart2, Cpu, User, Lightbulb } from 'lucide-react'; // AlertCircle removed as it's not used
+import { BarChart2, Cpu, User, Lightbulb, Award } from 'lucide-react';
 import { analyzeGameState } from '@/ai/flows/analyze-game-state';
 import { suggestMove } from '@/ai/flows/suggest-move';
 import { useToast } from "@/hooks/use-toast";
 import AnimalIcon from '@/components/icons/AnimalIcons';
 
-// Initial pieces for an 8x8 board
-// Human: 5 Goats, 1 Lion, 2 Giraffes
-// AI: 5 Goats, 1 Lion, 2 Giraffes
 const initialPieces: Record<string, Piece> = {
-  // Human pieces (start at row BOARD_SIZE - 1, i.e., row 7)
   'h_goat1': { id: 'h_goat1', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 0 } },
   'h_goat2': { id: 'h_goat2', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 1 } },
   'h_goat3': { id: 'h_goat3', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 2 } },
@@ -26,7 +23,6 @@ const initialPieces: Record<string, Piece> = {
   'h_giraffe1': { id: 'h_giraffe1', animal: 'giraffe', player: 'human', position: { row: BOARD_SIZE - 1, col: 6 } },
   'h_giraffe2': { id: 'h_giraffe2', animal: 'giraffe', player: 'human', position: { row: BOARD_SIZE - 1, col: 7 } },
 
-  // AI pieces (start at row 0)
   'ai_goat1': { id: 'ai_goat1', animal: 'goat', player: 'ai', position: { row: 0, col: 0 } },
   'ai_goat2': { id: 'ai_goat2', animal: 'goat', player: 'ai', position: { row: 0, col: 1 } },
   'ai_goat3': { id: 'ai_goat3', animal: 'goat', player: 'ai', position: { row: 0, col: 2 } },
@@ -37,16 +33,21 @@ const initialPieces: Record<string, Piece> = {
   'ai_giraffe2': { id: 'ai_giraffe2', animal: 'giraffe', player: 'ai', position: { row: 0, col: 7 } },
 };
 
-
 function createInitialBoard(pieces: Record<string, Piece>): Board {
   const board: Board = Array(BOARD_SIZE).fill(null).map((_, r) =>
     Array(BOARD_SIZE).fill(null).map((_, c) => ({
       row: r,
       col: c,
-      isRift: r === RIFT_POSITION.row && c === RIFT_POSITION.col,
+      terrain: 'none' as TerrainType, // Default terrain
       pieceId: null,
     }))
   );
+
+  TERRAIN_POSITIONS.forEach(tp => {
+    if (tp.pos.row < BOARD_SIZE && tp.pos.col < BOARD_SIZE) {
+      board[tp.pos.row][tp.pos.col].terrain = tp.type;
+    }
+  });
 
   Object.values(pieces).forEach(p => {
     board[p.position.row][p.position.col].pieceId = p.id;
@@ -55,7 +56,7 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
 }
 
 function initializeGameState(): GameState {
-  const pieces = JSON.parse(JSON.stringify(initialPieces)); // Deep copy
+  const pieces = JSON.parse(JSON.stringify(initialPieces));
   return {
     board: createInitialBoard(pieces),
     pieces: pieces,
@@ -72,13 +73,21 @@ function initializeGameState(): GameState {
   };
 }
 
-// Updated piece notation: Goat (T), Giraffe (F), Lion (L)
 function getAnimalChar(animal: AnimalType): string {
   switch(animal) {
     case 'goat': return 'T';
     case 'giraffe': return 'F';
     case 'lion': return 'L';
     default: return '?';
+  }
+}
+
+function getTerrainChar(terrain: TerrainType): string {
+  switch (terrain) {
+    case 'rift': return 'K';
+    case 'swamp': return 'S';
+    case 'hill': return 'H';
+    default: return '';
   }
 }
 
@@ -91,12 +100,13 @@ function getBoardString(board: Board, pieces: Record<string, Piece>): string {
         const animalChar = getAnimalChar(piece.animal);
         return `${playerChar}${animalChar}`;
       }
-      if (square.isRift) return 'RF';
+      if (square.terrain !== 'none') {
+        return getTerrainChar(square.terrain);
+      }
       return '..';
-    }).join(' ') // Add space for better readability of 8x8
+    }).join(' ')
   ).join('\n');
 }
-
 
 export default function SavannahChasePage() {
   const [gameState, setGameState] = useState<GameState>(initializeGameState);
@@ -123,7 +133,7 @@ export default function SavannahChasePage() {
     potentialMoves.forEach(move => {
       if (move.r >= 0 && move.r < BOARD_SIZE && move.c >= 0 && move.c < BOARD_SIZE) {
         const targetSquare = board[move.r][move.c];
-        if (!targetSquare.pieceId) { // Can only move to empty squares
+        if (!targetSquare.pieceId) {
           moves.push({ row: move.r, col: move.c });
         }
       }
@@ -143,27 +153,20 @@ export default function SavannahChasePage() {
 
       if (isValidMove) {
         const newPieces = { ...gameState.pieces };
-        const newBoard = gameState.board.map(r => r.map(s => ({ ...s })));
+        const newBoard = gameState.board.map(r => r.map(s => ({ ...s } as Square))); // Ensure type
 
-        // Vacate old square
         newBoard[selectedPiece.position.row][selectedPiece.position.col].pieceId = null;
-        
-        // Update piece position
         newPieces[selectedPiece.id] = { ...selectedPiece, position: { row, col } };
-        
-        // Occupy new square
         newBoard[row][col].pieceId = selectedPiece.id;
         
         let nextPlayer: PlayerType = 'ai';
         let message = "AI Opponent's turn.";
         const animalName = selectedPiece.animal.charAt(0).toUpperCase() + selectedPiece.animal.slice(1);
 
-
-        // Rift logic
-        if (newBoard[row][col].isRift) {
-          toast({ title: "Rift Zone!", description: `${animalName} landed on a rift and loses the next turn!` });
-          nextPlayer = 'human'; // Skip AI's turn
-          message = "Human Player's turn again due to Rift!";
+        if (newBoard[row][col].terrain === 'rift') {
+          toast({ title: "Kluft!", description: `${animalName} landed in a rift and loses the next turn!` });
+          nextPlayer = 'human'; 
+          message = "Human Player's turn again due to Kluft!";
         }
         
         const winner = checkWinCondition(newPieces);
@@ -180,7 +183,6 @@ export default function SavannahChasePage() {
           message: winner ? `${winner === 'human' ? prev.playerOneName : prev.playerTwoName} wins!` : message,
         }));
       } else {
-        // Clicked on an invalid square or own piece again, deselect or select new piece
         if (pieceInSquare && pieceInSquare.player === 'human') {
           setGameState(prev => ({
             ...prev,
@@ -192,7 +194,6 @@ export default function SavannahChasePage() {
         }
       }
     } else if (pieceInSquare && pieceInSquare.player === 'human') {
-      // No piece selected, and clicked on a human player's piece
       setGameState(prev => ({
         ...prev,
         selectedPieceId: pieceInSquare.id,
@@ -241,31 +242,36 @@ export default function SavannahChasePage() {
     }
   };
   
-  // AI Turn Logic
   useEffect(() => {
     if (gameState.currentPlayer === 'ai' && !gameState.isGameOver && !isLoadingAI) {
       setIsLoadingAI(true);
       const performAiMove = async () => {
         try {
           const boardString = getBoardString(gameState.board, gameState.pieces);
-          const suggestionResult = await suggestMove({
-            boardState: boardString,
-            playerTurn: gameState.playerTwoName,
-          });
-          const suggestedMoveText = (suggestionResult as { suggestedMove: string }).suggestedMove;
-          setGameState(prev => ({ ...prev, aiSuggestion: suggestedMoveText }));
+          // AI still makes a simple move, suggestion is for display
+          // const suggestionResult = await suggestMove({
+          //   boardState: boardString,
+          //   playerTurn: gameState.playerTwoName,
+          // });
+          // const suggestedMoveText = (suggestionResult as { suggestedMove: string }).suggestedMove;
+          // setGameState(prev => ({ ...prev, aiSuggestion: suggestedMoveText }));
           
           const aiPieces = Object.values(gameState.pieces).filter(p => p.player === 'ai');
           let moved = false;
+          // Basic AI: try to move any piece one step forward if possible
           for (const piece of aiPieces) {
             const validMoves = calculateValidMoves(piece, gameState.board);
-            if (validMoves.length > 0) {
-              // Prefer moves downwards (towards human side)
-              const sortedMoves = validMoves.sort((a,b) => b.row - a.row);
-              const move = sortedMoves[0]; // Simplistic: take the "best" downward move
+            const downwardMoves = validMoves.filter(m => m.row > piece.position.row);
+            const otherMoves = validMoves.filter(m => m.row <= piece.position.row);
+            
+            // Prefer downward moves, then any valid move
+            const prioritizedMoves = [...downwardMoves.sort((a,b) => b.row - a.row), ...otherMoves];
+
+            if (prioritizedMoves.length > 0) {
+              const move = prioritizedMoves[0];
 
               const newPieces = { ...gameState.pieces };
-              const newBoard = gameState.board.map(r => r.map(s => ({ ...s })));
+              const newBoard = gameState.board.map(r => r.map(s => ({ ...s } as Square)));
               newBoard[piece.position.row][piece.position.col].pieceId = null;
               newPieces[piece.id] = { ...piece, position: { row: move.row, col: move.col } };
               newBoard[move.row][move.col].pieceId = piece.id;
@@ -274,11 +280,10 @@ export default function SavannahChasePage() {
               let message = "Human Player's turn.";
               const animalName = piece.animal.charAt(0).toUpperCase() + piece.animal.slice(1);
 
-
-              if (newBoard[move.row][move.col].isRift) {
-                toast({ title: "Rift Zone!", description: `${animalName} landed on a rift and loses the next turn!` });
-                nextPlayer = 'ai'; // Skip Human's turn
-                message = "AI Opponent's turn again due to Rift!";
+              if (newBoard[move.row][move.col].terrain === 'rift') {
+                toast({ title: "Kluft!", description: `AI ${animalName} landed in a rift and loses the next turn!` });
+                nextPlayer = 'ai'; 
+                message = "AI Opponent's turn again due to Kluft!";
               }
 
               const winner = checkWinCondition(newPieces);
@@ -290,10 +295,10 @@ export default function SavannahChasePage() {
                 winner,
                 isGameOver: !!winner,
                 message: winner ? `${winner === 'human' ? prev.playerOneName : prev.playerTwoName} wins!` : message,
-                aiSuggestion: `AI moved ${animalName} from (${piece.position.row},${piece.position.col}) to (${move.row},${move.col}). ${suggestedMoveText ? `(AI suggestion: ${suggestedMoveText})` : ''}`
+                aiSuggestion: `AI moved ${animalName} from (${piece.position.row},${piece.position.col}) to (${move.row},${move.col}).`
               }));
               moved = true;
-              break;
+              break; 
             }
           }
           if (!moved) { 
@@ -308,7 +313,7 @@ export default function SavannahChasePage() {
           setIsLoadingAI(false);
         }
       };
-      const timeoutId = setTimeout(performAiMove, 1000);
+      const timeoutId = setTimeout(performAiMove, 1000); // Keep AI thinking delay
       return () => clearTimeout(timeoutId);
     }
   }, [gameState.currentPlayer, gameState.isGameOver, gameState.board, gameState.pieces, calculateValidMoves, checkWinCondition, toast, isLoadingAI, gameState.playerOneName, gameState.playerTwoName]);
@@ -337,7 +342,7 @@ export default function SavannahChasePage() {
             isGameOver={gameState.isGameOver}
           />
            <div className="mt-4 text-center lg:text-left w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl">
-            <p className={`text-xl font-medium p-3 rounded-md shadow ${gameState.isGameOver ? (gameState.winner === 'human' ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-card'}`}>
+            <p className={`text-xl font-medium p-3 rounded-md shadow ${gameState.isGameOver ? (gameState.winner === 'human' ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-card text-card-foreground'}`}>
               {gameState.message}
             </p>
           </div>
@@ -362,7 +367,7 @@ export default function SavannahChasePage() {
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-muted-foreground">Winner:</span>
                   <span className="font-semibold text-green-600 flex items-center gap-1">
-                    <AnimalIcon type="crown" size={20} />
+                    <Award size={20} className="text-yellow-500" />
                     {gameState.winner === 'human' ? gameState.playerOneName : gameState.playerTwoName}
                   </span>
                 </div>
