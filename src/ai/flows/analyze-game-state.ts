@@ -15,7 +15,7 @@ import {z} from 'genkit';
 const AnalyzeGameStateInputSchema = z.object({
   boardState: z
     .string()
-    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, AI White side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., HZ for Human Gazelle, AL for AI Lion, HG for Human Giraffe). Empty: "..". Terrain: K=Kluft (pushed North), S=Sumpf, H=Hügel (Giraffe cannot enter).'),
+    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, AI White side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., HZ for Human Gazelle, AL for AI Lion, AG for AI Giraffe). Empty: "..". Terrain: K=Kluft (pushes piece in a specific, game-defined direction if landed on, not always North), S=Sumpf, H=Hügel (Giraffe cannot enter).'),
   playerOneName: z.string().describe('The name of player one (AI, White, Top).'),
   playerTwoName: z.string().describe('The name of player two (Human, Black, Bottom).'),
 });
@@ -41,19 +41,19 @@ export async function analyzeGameState(
 }
 
 const prompt = ai.definePrompt({
-  name: 'analyzeGameStatePrompt_v0_4_playersSwapped', 
+  name: 'analyzeGameStatePrompt_v0_4_randomRifts', 
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
-  prompt: `You are an expert game analyst for "Savannah Chase" (Version 0.4 GDD).
+  prompt: `You are an expert game analyst for "Savannah Chase" (Version 0.4 GDD, with randomized rifts).
 The board is 7x7. AI (A, White) starts rows 0/1. Human (H, Black) starts rows 6/5.
 Pieces:
 - Lion (L): Moves 1-3 (any dir). Pauses 1 turn after moving. Capturable only by Lion/Giraffe.
 - Giraffe (G): Moves max 2 (H/V). Cannot enter Hügel (H).
-- Gazelle (Z): Moves 1 forward (AI White towards higher rows, Human Black towards lower rows). Captures 1 diag forward. Cannot capture Lion.
+- Gazelle (Z): AI (White, Top) Gazelles move 1 square "forward" (increasing row index). Human (Black, Bottom) Gazelles move 1 square "forward" (decreasing row index). Captures 1 diag forward. Cannot capture Lion.
 Terrain:
-'K' (Kluft): Pushes piece North (row index decreases).
-'S' (Sumpf): No effect.
-'H' (Hügel): Giraffe cannot enter. Other pieces can.
+'K' (Kluft/Rift): If a piece lands here, it's pushed in a specific direction (determined by the game, not always North) until it hits an obstacle. Does not capture.
+'S' (Sumpf/Swamp): No special game effect currently.
+'H' (Hügel/Hill): Giraffe cannot enter. Other pieces can.
 Win: Capture enemy Lion OR all 5 enemy Gazelles.
 
 Board State (0-indexed rows from AI White top, 0-indexed columns from left):
@@ -74,7 +74,7 @@ Be concise and strategic.
 
 const analyzeGameStateFlow = ai.defineFlow(
   {
-    name: 'analyzeGameStateFlow_v0_4_playersSwapped',
+    name: 'analyzeGameStateFlow_v0_4_randomRifts',
     inputSchema: AnalyzeGameStateInputSchema,
     outputSchema: AnalyzeGameStateOutputSchema,
   },
@@ -82,7 +82,6 @@ const analyzeGameStateFlow = ai.defineFlow(
     const {output} = await prompt(input);
     if (!output || !output.playerOneSummary || !output.playerTwoSummary || !output.overallAssessment) {
         console.error('AI analysis failed to produce complete output. Input:', input, 'Raw Output:', output);
-        // Fallback to prevent crashing if AI output is incomplete
         return { 
             playerOneSummary: "Analysis data incomplete.", 
             playerTwoSummary: "Analysis data incomplete.",

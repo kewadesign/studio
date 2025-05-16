@@ -1,10 +1,10 @@
 
 'use client';
 import React from 'react';
-import type { Board, Piece, GameState, TerrainType, AnimalType } from '@/types/game'; 
+import type { Board, Piece, GameState, TerrainType, RiftDirection } from '@/types/game'; 
 import GamePiece from './GamePiece';
 import { BOARD_SIZE } from '@/types/game';
-import { ArrowUp } from 'lucide-react'; // Import ArrowUp
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface GameBoardProps {
   board: Board;
@@ -14,7 +14,7 @@ interface GameBoardProps {
   onSquareClick: (row: number, col: number) => void;
   currentPlayer: GameState['currentPlayer'];
   isGameOver: boolean;
-  getAnimalChar: (animal: AnimalType) => string;
+  // getAnimalChar prop is removed as GamePiece will handle its char internally
 }
 
 const getTerrainDisplayChar = (terrain: TerrainType): string => {
@@ -35,6 +35,15 @@ const getTerrainColorClass = (terrain: TerrainType): string => {
   }
 }
 
+const RiftArrowIcon: React.FC<{direction?: RiftDirection, className?: string}> = ({ direction, className }) => {
+  if (!direction) return null;
+  if (direction.dRow === -1) return <ArrowUp size={16} className={className} />; // North
+  if (direction.dRow === 1) return <ArrowDown size={16} className={className} />;  // South
+  if (direction.dCol === -1) return <ArrowLeft size={16} className={className} />; // West
+  if (direction.dCol === 1) return <ArrowRight size={16} className={className} />; // East
+  return null;
+}
+
 const GameBoard: React.FC<GameBoardProps> = ({
   board,
   pieces,
@@ -43,7 +52,6 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onSquareClick,
   currentPlayer,
   isGameOver,
-  getAnimalChar,
 }) => {
   const gridColsClass = `grid-cols-${BOARD_SIZE}`; 
 
@@ -63,21 +71,23 @@ const GameBoard: React.FC<GameBoardProps> = ({
         let cursorClass = 'cursor-default';
 
         if (isValidMove) {
-          squareBgClass = 'bg-green-400/50 dark:bg-green-600/50';
+          squareBgClass = 'bg-green-400/50 dark:bg-green-600/50'; // GDD: "kleine Zylinder" - this is a color highlight
           cursorClass = 'cursor-pointer hover:bg-green-500/60';
         } else if (piece && piece.player === currentPlayer && !isGameOver) {
+          // GDD: "Angeklickte, spielbare Figuren ... leuchten gelb" - this is handled by isSelected styling
+          // Hover effect for selectable pieces
           squareBgClass += ' hover:bg-primary/20';
           cursorClass = 'cursor-pointer';
         }
         
         if (isSelected) {
-            squareBgClass = 'bg-primary/30'; 
+            squareBgClass = 'bg-primary/30'; // GDD: yellow highlight for selected
         }
 
         return (
           <div
             key={`${square.row}-${square.col}`}
-            className={`aspect-square flex items-center justify-center rounded-sm transition-colors duration-150 ${squareBgClass} ${cursorClass}`}
+            className={`aspect-square flex items-center justify-center rounded-sm transition-colors duration-150 ${squareBgClass} ${cursorClass} relative`}
             onClick={() => !isGameOver && onSquareClick(square.row, square.col)}
             role="button"
             tabIndex={0}
@@ -87,21 +97,17 @@ const GameBoard: React.FC<GameBoardProps> = ({
               <GamePiece 
                 piece={piece} 
                 isSelected={isSelected} 
-                displayChar={getAnimalChar(piece.animal)} 
               />
             )}
-            {!piece && square.terrain === 'rift' && (
+            {!piece && square.terrain !== 'none' && (
               <div className="flex flex-col items-center justify-center">
                 <span className={`text-lg sm:text-xl ${getTerrainColorClass(square.terrain)} opacity-80`}>
                   {getTerrainDisplayChar(square.terrain)}
                 </span>
-                <ArrowUp size={16} className={`${getTerrainColorClass(square.terrain)} opacity-80`} />
+                {square.terrain === 'rift' && (
+                  <RiftArrowIcon direction={square.riftDirection} className={`${getTerrainColorClass(square.terrain)} opacity-80`} />
+                )}
               </div>
-            )}
-            {!piece && square.terrain !== 'none' && square.terrain !== 'rift' && (
-              <span className={`text-2xl sm:text-3xl ${getTerrainColorClass(square.terrain)} opacity-70`}>
-                {getTerrainDisplayChar(square.terrain)}
-              </span>
             )}
           </div>
         );
