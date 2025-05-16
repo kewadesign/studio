@@ -1,16 +1,13 @@
 import type {Metadata} from 'next';
-import { Geist_Sans as GeistSans, Geist_Mono as GeistMono } from 'next/font/google';
+import { Nunito } from 'next/font/google'; // Changed from Geist_Sans to Nunito
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster"; // Added Toaster
+import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = GeistSans({
-  variable: '--font-geist-sans',
+// Instantiate Nunito
+const nunito = Nunito({
   subsets: ['latin'],
-});
-
-const geistMono = GeistMono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  variable: '--font-nunito', // Define a CSS variable for Nunito
+  weight: ['400', '600', '700'], // Specify needed weights
 });
 
 export const metadata: Metadata = {
@@ -25,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${nunito.variable} font-sans antialiased`}> {/* Apply Nunito variable */}
         {children}
         <Toaster />
       </body>
