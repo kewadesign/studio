@@ -1,9 +1,10 @@
 
 'use client';
 import React from 'react';
-import type { Board, Piece, GameState, TerrainType, AnimalType } from '@/types/game'; // Added AnimalType
+import type { Board, Piece, GameState, TerrainType, AnimalType } from '@/types/game'; 
 import GamePiece from './GamePiece';
 import { BOARD_SIZE } from '@/types/game';
+import { ArrowUp } from 'lucide-react'; // Import ArrowUp
 
 interface GameBoardProps {
   board: Board;
@@ -13,7 +14,7 @@ interface GameBoardProps {
   onSquareClick: (row: number, col: number) => void;
   currentPlayer: GameState['currentPlayer'];
   isGameOver: boolean;
-  getAnimalChar: (animal: AnimalType) => string; // Added prop
+  getAnimalChar: (animal: AnimalType) => string;
 }
 
 const getTerrainDisplayChar = (terrain: TerrainType): string => {
@@ -28,8 +29,8 @@ const getTerrainDisplayChar = (terrain: TerrainType): string => {
 const getTerrainColorClass = (terrain: TerrainType): string => {
   switch (terrain) {
     case 'rift': return 'text-destructive font-bold'; 
-    case 'swamp': return 'text-emerald-600 dark:text-emerald-400 font-bold'; // Example: Sumpf-Farbe
-    case 'hill': return 'text-yellow-700 dark:text-yellow-500 font-bold';  // Example: Hügel-Farbe
+    case 'swamp': return 'text-emerald-600 dark:text-emerald-400 font-bold'; 
+    case 'hill': return 'text-yellow-700 dark:text-yellow-500 font-bold';  
     default: return 'text-muted-foreground';
   }
 }
@@ -42,7 +43,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onSquareClick,
   currentPlayer,
   isGameOver,
-  getAnimalChar, // Destructure new prop
+  getAnimalChar,
 }) => {
   const gridColsClass = `grid-cols-${BOARD_SIZE}`; 
 
@@ -69,11 +70,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
           cursorClass = 'cursor-pointer';
         }
         
-        // Highlighting for selected piece itself
         if (isSelected) {
-            squareBgClass = 'bg-primary/30'; // Highlight selected piece's square
+            squareBgClass = 'bg-primary/30'; 
         }
-
 
         return (
           <div
@@ -88,10 +87,18 @@ const GameBoard: React.FC<GameBoardProps> = ({
               <GamePiece 
                 piece={piece} 
                 isSelected={isSelected} 
-                displayChar={getAnimalChar(piece.animal)} // Pass display character
+                displayChar={getAnimalChar(piece.animal)} 
               />
             )}
-            {!piece && square.terrain !== 'none' && (
+            {!piece && square.terrain === 'rift' && (
+              <div className="flex flex-col items-center justify-center">
+                <span className={`text-lg sm:text-xl ${getTerrainColorClass(square.terrain)} opacity-80`}>
+                  {getTerrainDisplayChar(square.terrain)}
+                </span>
+                <ArrowUp size={16} className={`${getTerrainColorClass(square.terrain)} opacity-80`} />
+              </div>
+            )}
+            {!piece && square.terrain !== 'none' && square.terrain !== 'rift' && (
               <span className={`text-2xl sm:text-3xl ${getTerrainColorClass(square.terrain)} opacity-70`}>
                 {getTerrainDisplayChar(square.terrain)}
               </span>

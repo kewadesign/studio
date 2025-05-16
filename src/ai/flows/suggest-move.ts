@@ -15,19 +15,15 @@ import {z} from 'genkit';
 const SuggestMoveInputSchema = z.object({
   boardState: z
     .string()
-    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, Human side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., HZ for Human Gazelle, AL for AI Lion, HG for Human Giraffe). Empty: "..". Terrain: K=Kluft (pushed North if landed on), S=Sumpf (no effect), H=Hügel (Giraffe cannot enter).'),
+    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, AI White side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., HZ for Human Gazelle, AL for AI Lion, HG for Human Giraffe). Empty: "..". Terrain: K=Kluft (pushed North if landed on), S=Sumpf (no effect), H=Hügel (Giraffe cannot enter).'),
   playerTurn: z
     .string()
-    .describe('The name of the player whose turn it is (e.g., Human Player, AI Opponent).'),
-  // Optional: Add lionMovedLastTurn and captured pieces if the AI suggestion should be more sophisticated
-  // lionMovedLastTurn: z.enum(['human', 'ai']).nullable().describe("Indicates if a lion moved in the previous turn, and if so, which player's lion."),
-  // humanCapturedGazelles: z.number().describe("Number of AI gazelles captured by Human."),
-  // aiCapturedGazelles: z.number().describe("Number of Human gazelles captured by AI."),
+    .describe('The name of the player whose turn it is (e.g., Human Player (Black, Bottom), AI Opponent (White, Top)).'),
 });
 export type SuggestMoveInput = z.infer<typeof SuggestMoveInputSchema>;
 
 const SuggestMoveOutputSchema = z.object({
-  suggestedMove: z.string().describe('A textual description of the suggested move, like "Move Gazelle from (1,1) to (0,1)" or "Move Lion from (0,3) to (3,3) to capture Giraffe".'),
+  suggestedMove: z.string().describe('A textual description of the suggested move, like "Move Gazelle from (1,1) to (2,1)" or "Move Lion from (0,3) to (3,3) to capture Giraffe".'),
 });
 export type SuggestMoveOutput = z.infer<typeof SuggestMoveOutputSchema>;
 
@@ -36,35 +32,35 @@ export async function suggestMove(input: SuggestMoveInput): Promise<SuggestMoveO
 }
 
 const prompt = ai.definePrompt({
-  name: 'suggestMovePrompt_v0_4', // Versioned prompt name
+  name: 'suggestMovePrompt_v0_4_playersSwapped', 
   input: {schema: SuggestMoveInputSchema},
   output: {schema: SuggestMoveOutputSchema},
   prompt: `You are a strategic game AI for "Savannah Chase" (Version 0.4 GDD).
-The board is a 7x7 grid. Human player (H) pieces start at row 0/1 and AI player (A) pieces start at row 6/5.
+The board is a 7x7 grid. AI player (A, White) pieces start at row 0/1 and Human player (H, Black) pieces start at row 6/5.
 Pieces:
 - Lion (L): Moves 1-3 squares (orthogonally/diagonally). Cannot jump. Must pause for 1 turn after moving. Can be captured ONLY by an enemy Lion or Giraffe.
-- Giraffe (G): Moves max 2 squares (orthogonally). Cannot jump. Cannot enter Hügel (H) squares.
-- Gazelle (Z): Moves 1 square straight forward. Captures 1 square diagonally forward. Cannot capture a Lion.
+- Giraffe (G): Moves max 2 squares (orthogonally). Cannot jump. Cannot enter Hügel (H) squares. Other pieces can enter Hügel.
+- Gazelle (Z): AI (White, Top) Gazelles move 1 square "forward" (increasing row index). Human (Black, Bottom) Gazelles move 1 square "forward" (decreasing row index). Captures 1 square diagonally forward. Cannot capture a Lion.
 
-Players: Human (H), AI (A). Piece notation: PlayerInitialAnimalChar (e.g., HZ, AL, HG).
+Players: Human (H, Black, Bottom), AI (A, White, Top). Piece notation: PlayerInitialAnimalChar (e.g., HZ, AL, AG).
 '..' denotes an empty square.
 Terrain:
-'K' (Kluft/Rift): If a piece lands here, it's pushed North (row index decreases) until it hits an obstacle (another piece or board edge). Does not capture during push.
-'S' (Sumpf/Swamp): No special game effect currently.
+'K' (Kluft/Rift): If a piece lands here, it's pushed North (row index decreases) until it hits an obstacle. Does not capture.
+'S' (Sumpf/Swamp): No special game effect.
 'H' (Hügel/Hill): Giraffes cannot enter. Other pieces can.
 
 Win Conditions:
 1. Capture the opponent's Lion.
 2. Capture all 5 of the opponent's Gazelles.
 
-Current Board State (0-indexed rows from top Human side, 0-indexed columns from left, cells in a row separated by spaces):
+Current Board State (0-indexed rows from AI White top, 0-indexed columns from left, cells in a row separated by spaces):
 {{{boardState}}}
 
 It is {{{playerTurn}}}'s turn.
-Assume a Lion that just moved for {{{playerTurn}}} cannot move again this turn if it's their turn again due to Kluft, or if it's their regular subsequent turn.
+If a Lion belonging to {{{playerTurn}}} moved in their last turn, it cannot move again this turn.
 
 Analyze the board and suggest the best possible move for {{{playerTurn}}}.
-The suggested move should be described in a clear, actionable format, specifying the piece, its start and end coordinates. E.g., "Move Gazelle from (1,1) to (0,1)" or "Move Lion from (0,3) to (3,3) to capture Giraffe".
+The suggested move should be described in a clear, actionable format, specifying the piece, its start and end coordinates. E.g., "Move Gazelle from (1,1) to (2,1)" or "Move Lion from (0,3) to (3,3) to capture Giraffe".
 If no valid moves are possible for {{{playerTurn}}}, state that clearly.
 
 Prioritize moves in this order:
@@ -82,7 +78,7 @@ Provide only the suggested move text.
 
 const suggestMoveFlow = ai.defineFlow(
   {
-    name: 'suggestMoveFlow_v0_4',
+    name: 'suggestMoveFlow_v0_4_playersSwapped',
     inputSchema: SuggestMoveInputSchema,
     outputSchema: SuggestMoveOutputSchema,
   },
