@@ -1,6 +1,6 @@
 
 export type PlayerType = 'human' | 'ai';
-export type AnimalType = 'lion' | 'giraffe' | 'gazelle'; // Changed from goat
+export type AnimalType = 'lion' | 'giraffe' | 'gazelle';
 
 export interface Piece {
   id: string;
@@ -22,7 +22,7 @@ export type Board = Square[][];
 
 export interface CapturedPieces {
   gazelle: number;
-  lion: number; // Though only 1 lion, count makes it consistent
+  lion: number;
   giraffe: number;
 }
 
@@ -33,30 +33,28 @@ export interface GameState {
   selectedPieceId?: string | null;
   validMoves: { row: number; col: number }[];
   winner?: PlayerType | null;
-  playerOneName: string; // Human
-  playerTwoName: string; // AI
-  humanCapturedAIScore: CapturedPieces; // Pieces AI lost, captured by Human
-  aiCapturedHumanScore: CapturedPieces; // Pieces Human lost, captured by AI
-  lionMovedLastTurn: PlayerType | null; // Tracks if a lion moved in the last turn to enforce pause
+  playerOneName: string; // AI (White, Top)
+  playerTwoName: string; // Human (Black, Bottom)
+  humanCapturedAIScore: CapturedPieces; // Pieces AI (White) lost, captured by Human (Black)
+  aiCapturedHumanScore: CapturedPieces;   // Pieces Human (Black) lost, captured by AI (White)
+  lionMovedLastTurn: PlayerType | null;
   isGameOver: boolean;
   message: string;
 }
 
-export const BOARD_SIZE = 7; // Changed from 8
+export const BOARD_SIZE = 7;
 
 export interface TerrainPlacement {
   pos: { row: number; col: number };
   type: TerrainType;
-  direction?: { dRow: number; dCol: number }; // For rift push direction
+  direction?: { dRow: number; dCol: number };
 }
 
-// Define positions for new terrains (0-indexed for 7x7 board)
-// GDD: Sumpf: (1,3), (5,3) | Hügel: (2,3), (4,3) | Kluft: (3,3) mit Richtung (0,1) (Nord)
-// (0,1) Nord means row decreases (e.g. (3,3) to (2,3))
-export const TERRAIN_POSITIONS: TerrainPlacement[] = [
-  { pos: { row: 1, col: 3 }, type: 'swamp' },
-  { pos: { row: 5, col: 3 }, type: 'swamp' },
-  { pos: { row: 2, col: 3 }, type: 'hill' },
-  { pos: { row: 4, col: 3 }, type: 'hill' },
+// Central Rift remains fixed as per GDD v0.4
+export const FIXED_TERRAIN_POSITIONS: TerrainPlacement[] = [
   { pos: { row: 3, col: 3 }, type: 'rift', direction: { dRow: -1, dCol: 0 } }, // Push North
 ];
+
+// Number of random terrains to place
+export const NUM_RANDOM_SWAMPS = 2;
+export const NUM_RANDOM_HILLS = 2;
