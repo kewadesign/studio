@@ -1,7 +1,7 @@
 
 'use client';
 import React from 'react';
-import type { Board, Piece, GameState, TerrainType, RiftDirection } from '@/types/game'; 
+import type { Board, Piece, GameState, TerrainType, RiftDirection, AnimalType } from '@/types/game'; 
 import GamePiece from './GamePiece';
 import { BOARD_SIZE } from '@/types/game';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -14,7 +14,7 @@ interface GameBoardProps {
   onSquareClick: (row: number, col: number) => void;
   currentPlayer: GameState['currentPlayer'];
   isGameOver: boolean;
-  // getAnimalChar prop is removed as GamePiece will handle its char internally
+  getAnimalChar: (animal: AnimalType) => string; // Add this prop
 }
 
 const getTerrainDisplayChar = (terrain: TerrainType): string => {
@@ -37,10 +37,12 @@ const getTerrainColorClass = (terrain: TerrainType): string => {
 
 const RiftArrowIcon: React.FC<{direction?: RiftDirection, className?: string}> = ({ direction, className }) => {
   if (!direction) return null;
-  if (direction.dRow === -1) return <ArrowUp size={16} className={className} />; // North
-  if (direction.dRow === 1) return <ArrowDown size={16} className={className} />;  // South
-  if (direction.dCol === -1) return <ArrowLeft size={16} className={className} />; // West
-  if (direction.dCol === 1) return <ArrowRight size={16} className={className} />; // East
+  // Adjust icon size for smaller board cells
+  const iconSize = 14;
+  if (direction.dRow === -1 && direction.dCol === 0) return <ArrowUp size={iconSize} className={className} />; // North
+  if (direction.dRow === 1 && direction.dCol === 0) return <ArrowDown size={iconSize} className={className} />;  // South
+  if (direction.dRow === 0 && direction.dCol === -1) return <ArrowLeft size={iconSize} className={className} />; // West
+  if (direction.dRow === 0 && direction.dCol === 1) return <ArrowRight size={iconSize} className={className} />; // East
   return null;
 }
 
@@ -52,6 +54,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onSquareClick,
   currentPlayer,
   isGameOver,
+  getAnimalChar, // Destructure prop
 }) => {
   const gridColsClass = `grid-cols-${BOARD_SIZE}`; 
 
@@ -71,17 +74,15 @@ const GameBoard: React.FC<GameBoardProps> = ({
         let cursorClass = 'cursor-default';
 
         if (isValidMove) {
-          squareBgClass = 'bg-green-400/50 dark:bg-green-600/50'; // GDD: "kleine Zylinder" - this is a color highlight
+          squareBgClass = 'bg-green-400/50 dark:bg-green-600/50'; 
           cursorClass = 'cursor-pointer hover:bg-green-500/60';
-        } else if (piece && piece.player === currentPlayer && !isGameOver) {
-          // GDD: "Angeklickte, spielbare Figuren ... leuchten gelb" - this is handled by isSelected styling
-          // Hover effect for selectable pieces
+        } else if (piece && piece.player === currentPlayer && !isGameOver && currentPlayer === 'human') {
           squareBgClass += ' hover:bg-primary/20';
           cursorClass = 'cursor-pointer';
         }
         
         if (isSelected) {
-            squareBgClass = 'bg-primary/30'; // GDD: yellow highlight for selected
+            squareBgClass = 'bg-primary/30'; 
         }
 
         return (
@@ -96,12 +97,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
             {piece && (
               <GamePiece 
                 piece={piece} 
-                isSelected={isSelected} 
+                isSelected={isSelected}
+                displayChar={getAnimalChar(piece.animal)} // Pass displayChar
               />
             )}
             {!piece && square.terrain !== 'none' && (
-              <div className="flex flex-col items-center justify-center">
-                <span className={`text-lg sm:text-xl ${getTerrainColorClass(square.terrain)} opacity-80`}>
+              <div className="flex flex-col items-center justify-center text-center">
+                <span className={`text-sm sm:text-base ${getTerrainColorClass(square.terrain)} opacity-80 leading-none`}>
                   {getTerrainDisplayChar(square.terrain)}
                 </span>
                 {square.terrain === 'rift' && (
@@ -117,3 +119,5 @@ const GameBoard: React.FC<GameBoardProps> = ({
 };
 
 export default GameBoard;
+
+    
