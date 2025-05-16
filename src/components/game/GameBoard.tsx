@@ -3,6 +3,7 @@ import React from 'react';
 import type { Board, Piece, GameState } from '@/types/game';
 import GamePiece from './GamePiece';
 import AnimalIcon from '@/components/icons/AnimalIcons';
+import { BOARD_SIZE } from '@/types/game'; // Import BOARD_SIZE
 
 interface GameBoardProps {
   board: Board;
@@ -23,8 +24,14 @@ const GameBoard: React.FC<GameBoardProps> = ({
   currentPlayer,
   isGameOver,
 }) => {
+  // Dynamically create grid-cols class based on BOARD_SIZE
+  const gridColsClass = `grid-cols-${BOARD_SIZE}`;
+
   return (
-    <div className="grid grid-cols-5 gap-1 p-2 bg-secondary/30 rounded-lg shadow-md aspect-square w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
+    <div 
+      className={`grid ${gridColsClass} gap-1 p-2 bg-secondary/30 rounded-lg shadow-md aspect-square w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl`}
+      style={{ gridTemplateColumns: `repeat(${BOARD_SIZE}, minmax(0, 1fr))` }} // Ensure Tailwind JIT picks this up or use inline style
+    >
       {board.flat().map((square) => {
         const piece = square.pieceId ? pieces[square.pieceId] : null;
         const isSelected = piece?.id === selectedPieceId;
@@ -46,13 +53,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
         return (
           <div
             key={`${square.row}-${square.col}`}
-            className={`aspect-square flex items-center justify-center rounded-md transition-colors duration-150 ${squareBgClass}`}
+            className={`aspect-square flex items-center justify-center rounded-sm transition-colors duration-150 ${squareBgClass}`} // rounded-sm for tighter grid
             onClick={() => !isGameOver && onSquareClick(square.row, square.col)}
             role="button"
             tabIndex={0}
             aria-label={`Square ${square.row + 1}, ${square.col + 1}${piece ? `, contains ${piece.animal}` : ''}${isValidMove ? ', valid move' : ''}`}
           >
-            {square.isRift && !piece && <AnimalIcon type="rift" size={24} />}
+            {square.isRift && !piece && <AnimalIcon type="rift" size={20} />} 
             {piece && <GamePiece piece={piece} isSelected={isSelected} />}
           </div>
         );

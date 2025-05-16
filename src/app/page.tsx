@@ -2,23 +2,41 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import GameBoard from '@/components/game/GameBoard';
-import type { GameState, Piece, Board, Square, PlayerType, AnimalType } from '@/types/game';
+import type { GameState, Piece, Board, PlayerType, AnimalType } from '@/types/game';
 import { BOARD_SIZE, RIFT_POSITION } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, BarChart2, Cpu, User, Lightbulb } from 'lucide-react';
+import { BarChart2, Cpu, User, Lightbulb } from 'lucide-react'; // AlertCircle removed as it's not used
 import { analyzeGameState } from '@/ai/flows/analyze-game-state';
 import { suggestMove } from '@/ai/flows/suggest-move';
 import { useToast } from "@/hooks/use-toast";
 import AnimalIcon from '@/components/icons/AnimalIcons';
 
-
+// Initial pieces for an 8x8 board
+// Human: 5 Goats, 1 Lion, 2 Giraffes
+// AI: 5 Goats, 1 Lion, 2 Giraffes
 const initialPieces: Record<string, Piece> = {
-  'h_elephant': { id: 'h_elephant', animal: 'elephant', player: 'human', position: { row: BOARD_SIZE - 1, col: 1 } },
-  'h_lion': { id: 'h_lion', animal: 'lion', player: 'human', position: { row: BOARD_SIZE - 1, col: BOARD_SIZE - 2 } },
-  'ai_zebra': { id: 'ai_zebra', animal: 'zebra', player: 'ai', position: { row: 0, col: 1 } },
-  'ai_cheetah': { id: 'ai_cheetah', animal: 'cheetah', player: 'ai', position: { row: 0, col: BOARD_SIZE - 2 } },
+  // Human pieces (start at row BOARD_SIZE - 1, i.e., row 7)
+  'h_goat1': { id: 'h_goat1', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 0 } },
+  'h_goat2': { id: 'h_goat2', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 1 } },
+  'h_goat3': { id: 'h_goat3', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 2 } },
+  'h_goat4': { id: 'h_goat4', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 3 } },
+  'h_goat5': { id: 'h_goat5', animal: 'goat', player: 'human', position: { row: BOARD_SIZE - 1, col: 4 } },
+  'h_lion1': { id: 'h_lion1', animal: 'lion', player: 'human', position: { row: BOARD_SIZE - 1, col: 5 } },
+  'h_giraffe1': { id: 'h_giraffe1', animal: 'giraffe', player: 'human', position: { row: BOARD_SIZE - 1, col: 6 } },
+  'h_giraffe2': { id: 'h_giraffe2', animal: 'giraffe', player: 'human', position: { row: BOARD_SIZE - 1, col: 7 } },
+
+  // AI pieces (start at row 0)
+  'ai_goat1': { id: 'ai_goat1', animal: 'goat', player: 'ai', position: { row: 0, col: 0 } },
+  'ai_goat2': { id: 'ai_goat2', animal: 'goat', player: 'ai', position: { row: 0, col: 1 } },
+  'ai_goat3': { id: 'ai_goat3', animal: 'goat', player: 'ai', position: { row: 0, col: 2 } },
+  'ai_goat4': { id: 'ai_goat4', animal: 'goat', player: 'ai', position: { row: 0, col: 3 } },
+  'ai_goat5': { id: 'ai_goat5', animal: 'goat', player: 'ai', position: { row: 0, col: 4 } },
+  'ai_lion1': { id: 'ai_lion1', animal: 'lion', player: 'ai', position: { row: 0, col: 5 } },
+  'ai_giraffe1': { id: 'ai_giraffe1', animal: 'giraffe', player: 'ai', position: { row: 0, col: 6 } },
+  'ai_giraffe2': { id: 'ai_giraffe2', animal: 'giraffe', player: 'ai', position: { row: 0, col: 7 } },
 };
+
 
 function createInitialBoard(pieces: Record<string, Piece>): Board {
   const board: Board = Array(BOARD_SIZE).fill(null).map((_, r) =>
@@ -54,18 +72,28 @@ function initializeGameState(): GameState {
   };
 }
 
+// Updated piece notation: Goat (T), Giraffe (F), Lion (L)
+function getAnimalChar(animal: AnimalType): string {
+  switch(animal) {
+    case 'goat': return 'T';
+    case 'giraffe': return 'F';
+    case 'lion': return 'L';
+    default: return '?';
+  }
+}
+
 function getBoardString(board: Board, pieces: Record<string, Piece>): string {
   return board.map(row =>
     row.map(square => {
       if (square.pieceId) {
         const piece = pieces[square.pieceId];
         const playerChar = piece.player === 'human' ? 'H' : 'A';
-        const animalChar = piece.animal.substring(0,1).toUpperCase();
+        const animalChar = getAnimalChar(piece.animal);
         return `${playerChar}${animalChar}`;
       }
       if (square.isRift) return 'RF';
       return '..';
-    }).join('')
+    }).join(' ') // Add space for better readability of 8x8
   ).join('\n');
 }
 
@@ -83,7 +111,7 @@ export default function SavannahChasePage() {
     return null;
   }, []);
   
-  const calculateValidMoves = useCallback((piece: Piece, board: Board, currentPieces: Record<string, Piece>): { row: number; col: number }[] => {
+  const calculateValidMoves = useCallback((piece: Piece, board: Board): { row: number; col: number }[] => {
     if (!piece) return [];
     const moves: { row: number; col: number }[] = [];
     const { row, col } = piece.position;
@@ -128,10 +156,12 @@ export default function SavannahChasePage() {
         
         let nextPlayer: PlayerType = 'ai';
         let message = "AI Opponent's turn.";
+        const animalName = selectedPiece.animal.charAt(0).toUpperCase() + selectedPiece.animal.slice(1);
+
 
         // Rift logic
         if (newBoard[row][col].isRift) {
-          toast({ title: "Rift Zone!", description: `${selectedPiece.animal} landed on a rift and loses the next turn!` });
+          toast({ title: "Rift Zone!", description: `${animalName} landed on a rift and loses the next turn!` });
           nextPlayer = 'human'; // Skip AI's turn
           message = "Human Player's turn again due to Rift!";
         }
@@ -155,7 +185,7 @@ export default function SavannahChasePage() {
           setGameState(prev => ({
             ...prev,
             selectedPieceId: pieceInSquare.id,
-            validMoves: calculateValidMoves(pieceInSquare, prev.board, prev.pieces),
+            validMoves: calculateValidMoves(pieceInSquare, prev.board),
           }));
         } else {
           setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [] }));
@@ -166,7 +196,7 @@ export default function SavannahChasePage() {
       setGameState(prev => ({
         ...prev,
         selectedPieceId: pieceInSquare.id,
-        validMoves: calculateValidMoves(pieceInSquare, prev.board, prev.pieces),
+        validMoves: calculateValidMoves(pieceInSquare, prev.board),
       }));
     }
   }, [gameState, calculateValidMoves, checkWinCondition, toast]);
@@ -199,7 +229,6 @@ export default function SavannahChasePage() {
         boardState: boardString,
         playerTurn: gameState.currentPlayer === 'human' ? gameState.playerOneName : gameState.playerTwoName,
       });
-      // Type assertion, assuming SuggestMoveOutput has suggestedMove
       const suggestionText = (suggestionResult as { suggestedMove: string }).suggestedMove;
       setGameState(prev => ({ ...prev, aiSuggestion: suggestionText }));
       toast({ title: "AI Suggestion Ready", description: suggestionText || "AI has a suggestion."});
@@ -226,16 +255,14 @@ export default function SavannahChasePage() {
           const suggestedMoveText = (suggestionResult as { suggestedMove: string }).suggestedMove;
           setGameState(prev => ({ ...prev, aiSuggestion: suggestedMoveText }));
           
-          // Basic AI: Find first movable AI piece and make a valid move towards human's side.
-          // This is a placeholder. A real AI would parse suggestedMoveText or use a better strategy.
           const aiPieces = Object.values(gameState.pieces).filter(p => p.player === 'ai');
           let moved = false;
           for (const piece of aiPieces) {
-            const validMoves = calculateValidMoves(piece, gameState.board, gameState.pieces);
+            const validMoves = calculateValidMoves(piece, gameState.board);
             if (validMoves.length > 0) {
               // Prefer moves downwards (towards human side)
               const sortedMoves = validMoves.sort((a,b) => b.row - a.row);
-              const move = sortedMoves[0];
+              const move = sortedMoves[0]; // Simplistic: take the "best" downward move
 
               const newPieces = { ...gameState.pieces };
               const newBoard = gameState.board.map(r => r.map(s => ({ ...s })));
@@ -245,9 +272,11 @@ export default function SavannahChasePage() {
               
               let nextPlayer: PlayerType = 'human';
               let message = "Human Player's turn.";
+              const animalName = piece.animal.charAt(0).toUpperCase() + piece.animal.slice(1);
+
 
               if (newBoard[move.row][move.col].isRift) {
-                toast({ title: "Rift Zone!", description: `${piece.animal} landed on a rift and loses the next turn!` });
+                toast({ title: "Rift Zone!", description: `${animalName} landed on a rift and loses the next turn!` });
                 nextPlayer = 'ai'; // Skip Human's turn
                 message = "AI Opponent's turn again due to Rift!";
               }
@@ -261,29 +290,28 @@ export default function SavannahChasePage() {
                 winner,
                 isGameOver: !!winner,
                 message: winner ? `${winner === 'human' ? prev.playerOneName : prev.playerTwoName} wins!` : message,
-                aiSuggestion: `AI moved ${piece.animal} from (${piece.position.row},${piece.position.col}) to (${move.row},${move.col}). ${suggestedMoveText ? `(AI suggestion: ${suggestedMoveText})` : ''}`
+                aiSuggestion: `AI moved ${animalName} from (${piece.position.row},${piece.position.col}) to (${move.row},${move.col}). ${suggestedMoveText ? `(AI suggestion: ${suggestedMoveText})` : ''}`
               }));
               moved = true;
               break;
             }
           }
-          if (!moved) { // AI has no moves
+          if (!moved) { 
              setGameState(prev => ({ ...prev, currentPlayer: 'human', message: "AI has no moves. Human Player's turn."}));
           }
 
         } catch (error) {
           console.error("Error during AI turn:", error);
           toast({ title: "AI Error", description: "AI failed to make a move.", variant: "destructive"});
-          setGameState(prev => ({ ...prev, currentPlayer: 'human', message: "AI Error. Human Player's turn." })); // Fallback to human
+          setGameState(prev => ({ ...prev, currentPlayer: 'human', message: "AI Error. Human Player's turn." })); 
         } finally {
           setIsLoadingAI(false);
         }
       };
-      // Add a small delay for AI "thinking" time
       const timeoutId = setTimeout(performAiMove, 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [gameState.currentPlayer, gameState.isGameOver, gameState.board, gameState.pieces, calculateValidMoves, checkWinCondition, toast, isLoadingAI]);
+  }, [gameState.currentPlayer, gameState.isGameOver, gameState.board, gameState.pieces, calculateValidMoves, checkWinCondition, toast, isLoadingAI, gameState.playerOneName, gameState.playerTwoName]);
 
   const handleResetGame = () => {
     setGameState(initializeGameState());
@@ -294,7 +322,7 @@ export default function SavannahChasePage() {
     <div className="flex flex-col items-center min-h-screen bg-background text-foreground p-4 sm:p-6 md:p-8">
       <header className="mb-6 text-center">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary tracking-tight">Savannah Chase</h1>
-        <p className="text-muted-foreground text-lg sm:text-xl">A game of wits and speed!</p>
+        <p className="text-muted-foreground text-lg sm:text-xl">A game of wits and speed on an 8x8 board!</p>
       </header>
 
       <main className="flex flex-col lg:flex-row gap-6 md:gap-8 w-full max-w-7xl">
@@ -308,7 +336,7 @@ export default function SavannahChasePage() {
             currentPlayer={gameState.currentPlayer}
             isGameOver={gameState.isGameOver}
           />
-           <div className="mt-4 text-center lg:text-left w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
+           <div className="mt-4 text-center lg:text-left w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl">
             <p className={`text-xl font-medium p-3 rounded-md shadow ${gameState.isGameOver ? (gameState.winner === 'human' ? 'bg-green-500 text-white' : 'bg-red-500 text-white') : 'bg-card'}`}>
               {gameState.message}
             </p>
@@ -350,10 +378,10 @@ export default function SavannahChasePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button onClick={handleAiAnalyze} disabled={isLoadingAI} className="w-full">
+              <Button onClick={handleAiAnalyze} disabled={isLoadingAI || gameState.isGameOver} className="w-full">
                 {isLoadingAI ? 'Analyzing...' : 'Analyze Game State'}
               </Button>
-              <Button onClick={handleAiSuggest} disabled={isLoadingAI} className="w-full">
+              <Button onClick={handleAiSuggest} disabled={isLoadingAI || gameState.isGameOver || gameState.currentPlayer === 'ai'} className="w-full">
                 {isLoadingAI ? 'Getting Suggestion...' : 'Get AI Move Suggestion'}
               </Button>
               {gameState.analysis && (

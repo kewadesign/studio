@@ -1,5 +1,5 @@
 export type PlayerType = 'human' | 'ai';
-export type AnimalType = 'lion' | 'zebra' | 'elephant' | 'cheetah';
+export type AnimalType = 'lion' | 'goat' | 'giraffe'; // Updated animals
 
 export interface Piece {
   id: string;
@@ -32,5 +32,5 @@ export interface GameState {
   message: string; // General messages, like who won or current status
 }
 
-export const BOARD_SIZE = 5;
-export const RIFT_POSITION = { row: Math.floor(BOARD_SIZE / 2), col: Math.floor(BOARD_SIZE / 2) };
+export const BOARD_SIZE = 8; // Updated board size
+export const RIFT_POSITION = { row: Math.floor(BOARD_SIZE / 2), col: Math.floor(BOARD_SIZE / 2) }; // Recalculated for 8x8: (4,4)
