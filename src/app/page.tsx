@@ -4,14 +4,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import GameBoard from '@/components/game/GameBoard';
 import type { GameState, Piece, Board, PlayerType, AnimalType, Square, TerrainType, CapturedPieces, RiftDirection } from '@/types/game';
-import { BOARD_SIZE, NUM_RANDOM_SWAMPS, NUM_RANDOM_HILLS, NUM_RANDOM_RIFTS, TERRAIN_POSITIONS } from '@/types/game';
+import { BOARD_SIZE, NUM_RANDOM_SWAMPS, NUM_RANDOM_HILLS, NUM_RANDOM_RIFTS } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart2, Cpu, User, Lightbulb, Award } from 'lucide-react';
 import { analyzeGameState } from '@/ai/flows/analyze-game-state';
 import { suggestMove } from '@/ai/flows/suggest-move';
 import { useToast } from "@/hooks/use-toast";
-import Tutorial from '@/components/game/Tutorial'; // Import Tutorial
+import Tutorial from '@/components/game/Tutorial';
 
 // GDD v0.4: 7x7 board. Player One (AI, White, Top), Player Two (Human, Black, Bottom)
 // Figures per player: 1 Lion (L), 2 Giraffes (G), 5 Gazelles (Z)
@@ -55,45 +55,8 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
   Object.values(pieces).forEach(p => {
     occupiedByFixedTerrainOrPiece.add(`${p.position.row}-${p.position.col}`);
   });
-
-  // Add GDD v0.4 fixed terrain positions
-  // Sumpf: (1,3), (5,3) -> these are now randomly placed
-  // Hügel: (2,3), (4,3) -> these are now randomly placed
-  // Kluft: (3,3) with direction (0,1) (North) -> This one is fixed as per GDD
-  // This needs to be adjusted if fixed positions are no longer desired OR if player sides swapped.
-  // Current setup: Player 'ai' (White) top (rows 0,1), Player 'human' (Black) bottom (rows 6,5)
-  // GDD mapping: (c1) is col 2, row 0. (d1) is col 3, row 0 etc.
-  // (x,y) in GDD (1-indexed from White's perspective, A-G for cols)
-  // (1,3) Sumpf -> GDD (C2) -> (row 1, col 2) // This interpretation might be off.
-  // GDD (x,y) mapping to (row,col) where (row 0, col 0) is top-left.
-  // Assuming GDD (colChar, GDD_row) maps to (row=GDD_row-1, col=colChar_to_index)
-  // (C2) Sumpf: (row 1, col 2). (F2) Sumpf: (row 1, col 5)
-  // (C4) Hügel: (row 3, col 2). (F4) Hügel: (row 3, col 5)
-  // (D4) Kluft: (row 3, col 3)
-  // The GDD example uses (1,3), (5,3) for Sumpf, which is (row 1, col 3) and (row 5, col 3)
-  // Hügel (2,3), (4,3) -> (row 2, col 3), (row 4, col 3)
-  // Kluft (3,3) -> (row 3, col 3) pushing North (dRow: -1, dCol: 0)
-
-  // Let's use the GDD specified terrain positions for now
-  const fixedTerrains = [
-    { pos: TERRAIN_POSITIONS.SWAMP_1, type: 'swamp' as TerrainType },
-    { pos: TERRAIN_POSITIONS.SWAMP_2, type: 'swamp' as TerrainType },
-    { pos: TERRAIN_POSITIONS.HILL_1, type: 'hill' as TerrainType },
-    { pos: TERRAIN_POSITIONS.HILL_2, type: 'hill' as TerrainType },
-    { pos: TERRAIN_POSITIONS.RIFT_CENTER, type: 'rift' as TerrainType, direction: { dRow: -1, dCol: 0 } as RiftDirection }, // North push
-  ];
-
-  fixedTerrains.forEach(ft => {
-    if (ft.pos) {
-        board[ft.pos.row][ft.pos.col].terrain = ft.type;
-        if (ft.type === 'rift' && ft.direction) {
-            board[ft.pos.row][ft.pos.col].riftDirection = ft.direction;
-        }
-        occupiedByFixedTerrainOrPiece.add(`${ft.pos.row}-${ft.pos.col}`);
-    }
-  });
   
-  // Available cells for *additional* random terrain, not on start rows or fixed terrain/pieces
+  // Available cells for random terrain, not on start rows or fixed terrain/pieces
   const availableCellsForRandomTerrain: {row: number, col: number}[] = [];
   for (let r = 0; r < BOARD_SIZE; r++) {
     // Restrict random terrain to rows 2, 3, 4 (middle rows)
@@ -119,11 +82,11 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
     { dRow: 0, dCol: 1 },  // East
   ];
 
-  // Place NUM_RANDOM_SWAMPS (e.g. 2) in addition to fixed ones, if any
+  // Place NUM_RANDOM_SWAMPS
   for (let i = 0; i < NUM_RANDOM_SWAMPS && randomTerrainPlacedCount < availableCellsForRandomTerrain.length; i++) {
     const cell = availableCellsForRandomTerrain[randomTerrainPlacedCount++];
     board[cell.row][cell.col].terrain = 'swamp';
-    occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`); // Mark as occupied for next random terrain type
+    occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`); 
   }
 
   // Place NUM_RANDOM_HILLS
@@ -133,14 +96,13 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
     occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`);
   }
   
-  // Place NUM_RANDOM_RIFTS (e.g. 2) in addition to the central one
+  // Place NUM_RANDOM_RIFTS
   for (let i = 0; i < NUM_RANDOM_RIFTS && randomTerrainPlacedCount < availableCellsForRandomTerrain.length; i++) {
     const cell = availableCellsForRandomTerrain[randomTerrainPlacedCount++];
     board[cell.row][cell.col].terrain = 'rift';
     board[cell.row][cell.col].riftDirection = riftDirections[Math.floor(Math.random() * riftDirections.length)];
     occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`);
   }
-
 
   // Place pieces on the board
   Object.values(pieces).forEach(p => {
@@ -173,7 +135,8 @@ function getBoardString(board: Board, pieces: Record<string, Piece>): string {
       if (square.pieceId) {
         const piece = pieces[square.pieceId];
         // PlayerInitial: B for Human/Black, W for AI/White
-        const playerChar = piece.player === 'human' ? 'B' : 'W'; 
+        // In GDD: Player One (AI, White, Top), Player Two (Human, Black, Bottom)
+        const playerChar = piece.player === 'ai' ? 'W' : 'B'; 
         const animalChar = getAnimalChar(piece.animal);
         return `${playerChar}${animalChar}`;
       }
@@ -189,12 +152,12 @@ function initializeGameState(): GameState {
   return {
     board: createInitialBoard(piecesCopy),
     pieces: piecesCopy,
-    currentPlayer: 'human', // GDD: White (Spieler) beginnt. Here: Human (Black) starts.
+    currentPlayer: 'human', // Player Two (Human, Black) starts as per GDD: "Weiß (Spieler) beginnt." - assuming Spieler is Human.
     selectedPieceId: null,
     validMoves: [],
     winner: null,
-    playerOneName: 'AI Opponent (White)', // White, Top, plays as 'ai'
-    playerTwoName: 'Human Player (Black)',   // Black, Bottom, plays as 'human'
+    playerOneName: 'AI Opponent (White)', // AI is Player One (White, Top)
+    playerTwoName: 'Human Player (Black)',   // Human is Player Two (Black, Bottom)
     humanCapturedAIScore: { ...initialCapturedScore }, 
     aiCapturedHumanScore: { ...initialCapturedScore },   
     lionMovedLastTurn: null, 
@@ -206,18 +169,18 @@ function initializeGameState(): GameState {
 export default function SavannahChasePage() {
   const [gameState, setGameState] = useState<GameState>(initializeGameState);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(true); // New state for tutorial
+  const [showTutorial, setShowTutorial] = useState(true); 
   const { toast } = useToast();
 
   const handleStartGame = () => {
     setShowTutorial(false);
-    setGameState(initializeGameState()); // Ensure a fresh game starts
+    setGameState(initializeGameState()); 
   };
   
   const checkWinCondition = useCallback((
     currentPieces: Record<string, Piece>, 
-    humanPlayerCapturesAiScore: CapturedPieces, 
-    aiPlayerCapturesHumanScore: CapturedPieces  
+    humanPlayerCapturesAiScore: CapturedPieces, // Human (Black, 'human') captures AI (White, 'ai')
+    aiPlayerCapturesHumanScore: CapturedPieces  // AI (White, 'ai') captures Human (Black, 'human')
   ): PlayerType | null => {
     // Human (Black, 'human') wins if they capture AI's (White, 'ai') Lion or 5 AI Gazelles
     if (humanPlayerCapturesAiScore.lion >= 1) return 'human'; 
@@ -252,7 +215,7 @@ export default function SavannahChasePage() {
         [-1, -1], [-1, 1], [1, -1], [1, 1]  
       ];
       for (const [dr, dc] of directions) {
-        for (let dist = 1; dist <= 3; dist++) {
+        for (let dist = 1; dist <= 2; dist++) { // Lion moves 1-2 squares
           const r = startRow + dr * dist;
           const c = startCol + dc * dist;
 
@@ -262,6 +225,9 @@ export default function SavannahChasePage() {
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
             if (targetPiece.player !== piece.player) { 
+              // Lion can be captured ONLY by an enemy Lion or Giraffe (GDD Schlagregeln #2)
+              // This check is done when *moving* a piece to capture the Lion.
+              // Here, we only check if the Lion can capture an enemy piece.
               moves.push({ row: r, col: c });
             }
             break; 
@@ -279,7 +245,7 @@ export default function SavannahChasePage() {
           if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break; 
           
           const targetSquare = currentBoard[r][c];
-          if (targetSquare.terrain === 'hill') continue; 
+          if (targetSquare.terrain === 'hill') continue; // Giraffe cannot enter Hill (GDD #5)
 
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
@@ -292,10 +258,11 @@ export default function SavannahChasePage() {
         }
       }
     } else if (piece.animal === 'gazelle') {
-      // Human (Black, 'human') Gazelles (start rows 5/6) move towards smaller row indices (up).
-      // AI (White, 'ai') Gazelles (start rows 0/1) move towards larger row indices (down).
+      // Player 'human' (Black, Bottom) Gazelles move "forward" (decreasing row index, towards AI)
+      // Player 'ai' (White, Top) Gazelles move "forward" (increasing row index, towards Human)
       const forwardDir = piece.player === 'human' ? -1 : 1; 
       
+      // Movement: 1 square forward
       const moveR = startRow + forwardDir;
       if (moveR >= 0 && moveR < BOARD_SIZE) { 
         if (!currentBoard[moveR][startCol].pieceId) { 
@@ -303,14 +270,18 @@ export default function SavannahChasePage() {
         }
       }
       
+      // Capture: 1 square diagonally forward
       const captureCols = [startCol - 1, startCol + 1];
       for (const captureC of captureCols) {
-        if (captureC >= 0 && captureC < BOARD_SIZE && moveR >=0 && moveR < BOARD_SIZE) { 
-          const targetSquare = currentBoard[moveR][captureC];
+        // Gazelle capture row is the same as its forward move row
+        const captureR = startRow + forwardDir; 
+        if (captureC >= 0 && captureC < BOARD_SIZE && captureR >=0 && captureR < BOARD_SIZE) { 
+          const targetSquare = currentBoard[captureR][captureC];
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
+            // Gazelle can capture if target is enemy AND not a Lion (GDD Schlagregeln #1)
             if (targetPiece.player !== piece.player && targetPiece.animal !== 'lion') {
-              moves.push({ row: moveR, col: captureC });
+              moves.push({ row: captureR, col: captureC });
             }
           }
         }
@@ -334,7 +305,8 @@ export default function SavannahChasePage() {
     let messageUpdate;
 
     const originalPos = currentPieces[movedPieceId].position;
-    newBoard[originalPos.row][originalPos.col].pieceId = null;
+    // Clear piece from original square on the *newBoard* before rift processing
+    // newBoard[originalPos.row][originalPos.col].pieceId = null; // This is done by calling function
     
     const landedSquare = newBoard[finalPos.row][finalPos.col];
     
@@ -353,23 +325,32 @@ export default function SavannahChasePage() {
             const nextRow = currentPushRow + pushDirection.dRow;
             const nextCol = currentPushCol + pushDirection.dCol;
 
+            // Check bounds
             if (nextRow < 0 || nextRow >= BOARD_SIZE || nextCol < 0 || nextCol >= BOARD_SIZE) { 
-                break;
+                break; // Stop if pushed off board
             }
+            // Check for obstacle (another piece)
             if (newBoard[nextRow][nextCol].pieceId) { 
-                break;
+                break; // Stop if hits another piece
             }
+            // Update current position and finalPos
             currentPushRow = nextRow;
             currentPushCol = nextCol;
             finalPos = {row: currentPushRow, col: currentPushCol}; 
         }
     }
     
+    // Update piece position in newPieces AFTER rift effect processing
     newPieces[movedPieceId] = { ...pieceToUpdate, position: finalPos };
+    // Place piece on its final square on the newBoard
     newBoard[finalPos.row][finalPos.col].pieceId = movedPieceId;
-    
+    // Ensure original square is cleared if it wasn't the final landing square (e.g. rift moved it)
+    if (originalPos.row !== finalPos.row || originalPos.col !== finalPos.col) {
+        newBoard[originalPos.row][originalPos.col].pieceId = null;
+    }
+
     return { board: newBoard, pieces: newPieces, finalPosition: finalPos, messageUpdate };
-  }, [toast, gameState.playerOneName, gameState.playerTwoName]);
+  }, [toast, gameState.playerTwoName, gameState.playerOneName]);
 
 
   const handleSquareClick = useCallback((row: number, col: number) => {
@@ -386,52 +367,63 @@ export default function SavannahChasePage() {
         let newPieces = JSON.parse(JSON.stringify(gameState.pieces));
         let newBoard = gameState.board.map(r => r.map(s => ({ ...s } as Square)));
         let newHumanPlayerCapturesAiScore = { ...gameState.humanCapturedAIScore };
-        let newAiPlayerCapturesHumanScore = { ...gameState.aiCapturedHumanScore }; 
+        // AI score not needed here as human is moving
         
         let currentLionMovedLastTurn = gameState.lionMovedLastTurn;
         if (selectedPiece.animal === 'lion') {
-            currentLionMovedLastTurn = selectedPiece.player; 
+            currentLionMovedLastTurn = selectedPiece.player; // 'human'
+        } else if (gameState.lionMovedLastTurn === 'human') {
+            currentLionMovedLastTurn = null; // Reset pause if human moved a non-lion while human lion was paused
         }
 
         let moveMessage = "";
+        // Clear selected piece from its original position on the new board
         newBoard[selectedPiece.position.row][selectedPiece.position.col].pieceId = null;
         
         const targetSquareContentOriginalBoard = gameState.board[row][col];
-        if (targetSquareContentOriginalBoard.pieceId) { 
+        if (targetSquareContentOriginalBoard.pieceId) { // Potential capture
           const capturedPieceOriginal = gameState.pieces[targetSquareContentOriginalBoard.pieceId];
           
+          // GDD Schlagregeln #2: Lion can ONLY be captured by enemy Lion or Giraffe
           if (capturedPieceOriginal.animal === 'lion' && !(selectedPiece.animal === 'lion' || selectedPiece.animal === 'giraffe')) {
-             toast({ title: "Invalid Capture", description: `Your ${selectedPiece.animal} cannot capture a Lion. Only Lions or Giraffes can.`, variant: "destructive" });
-             setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [] }));
+             toast({ title: "Invalid Capture", description: `Your ${selectedPiece.animal} cannot capture a Lion. Only a Lion or Giraffe can.`, variant: "destructive" });
+             setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [] })); // Reset selection
              return;
           }
+          // GDD Schlagregeln #1: Gazelle cannot capture Lion (already handled by Gazelle's calculateValidMoves)
           
-          delete newPieces[targetSquareContentOriginalBoard.pieceId];
-          newHumanPlayerCapturesAiScore[capturedPieceOriginal.animal]++;
-          const capturerName = gameState.playerTwoName; 
-          const capturedOwnerName = gameState.playerOneName; 
+          delete newPieces[targetSquareContentOriginalBoard.pieceId]; // Remove captured piece
+          newHumanPlayerCapturesAiScore[capturedPieceOriginal.animal]++; // Update score
+          const capturerName = gameState.playerTwoName; // Human Player
+          const capturedOwnerName = gameState.playerOneName; // AI Opponent
           moveMessage = `${capturerName} ${selectedPiece.animal} captured ${capturedOwnerName} ${capturedPieceOriginal.animal}.`;
           toast({ title: "Capture!", description: moveMessage });
         }
         
-        newPieces[selectedPiece.id] = { ...selectedPiece, position: { row, col } };
+        // Tentatively place selected piece on target square (before special effects)
+        // newPieces[selectedPiece.id] = { ...selectedPiece, position: { row, col } };
+        // newBoard[row][col].pieceId = selectedPiece.id; // This is handled by processSpecialFieldEffects
 
+        // Process special field effects using the board *after* clearing the original spot
         const effectResult = processSpecialFieldEffects(selectedPiece.id, row, col, newBoard, newPieces);
         newBoard = effectResult.board; 
-        newPieces = effectResult.pieces; 
+        newPieces = effectResult.pieces; // newPieces now has the updated position from effectResult
         
         if (effectResult.messageUpdate && !moveMessage) moveMessage = effectResult.messageUpdate;
         else if (effectResult.messageUpdate) moveMessage += " " + effectResult.messageUpdate;
         
-        const winner = checkWinCondition(newPieces, newHumanPlayerCapturesAiScore, newAiPlayerCapturesHumanScore);
+        const winner = checkWinCondition(newPieces, newHumanPlayerCapturesAiScore, gameState.aiCapturedHumanScore);
         let nextPlayer: PlayerType = 'ai';
         let gameStatusMessage = winner 
           ? `${winner === 'human' ? gameState.playerTwoName : gameState.playerOneName} wins!`
           : `${gameState.playerOneName}'s turn (White).`; 
         
-        let nextLionMovedLastTurn = currentLionMovedLastTurn;
-        if (gameState.lionMovedLastTurn === 'human') {
-            nextLionMovedLastTurn = null; 
+        if (!moveMessage && !winner) {
+             const movedPieceOriginalPos = gameState.pieces[selectedPiece.id].position; 
+             const finalPos = newPieces[selectedPiece.id].position;
+             gameStatusMessage = `${gameState.playerTwoName} ${selectedPiece.animal} from (${movedPieceOriginalPos.row},${movedPieceOriginalPos.col}) to (${finalPos.row},${finalPos.col}). ${gameStatusMessage}`;
+        } else if (moveMessage && !winner) {
+            gameStatusMessage = `${moveMessage} ${gameStatusMessage}`;
         }
 
         setGameState(prev => ({
@@ -445,15 +437,15 @@ export default function SavannahChasePage() {
           isGameOver: !!winner,
           message: gameStatusMessage,
           humanCapturedAIScore: newHumanPlayerCapturesAiScore,
-          aiCapturedHumanScore: newAiPlayerCapturesHumanScore, 
-          lionMovedLastTurn: nextLionMovedLastTurn,
+          // aiCapturedHumanScore: gameState.aiCapturedHumanScore, // Stays same
+          lionMovedLastTurn: currentLionMovedLastTurn,
         }));
 
-      } else { 
-        if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { 
-            if (pieceInClickedSquare.id === gameState.selectedPieceId) {
+      } else { // Clicked on a non-valid-move square
+        if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { // If it's another of human's pieces
+            if (pieceInClickedSquare.id === gameState.selectedPieceId) { // Clicked selected piece again
                  setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [], message: `${gameState.playerTwoName}'s turn (Black). Select a piece.` }));
-            } else {
+            } else { // Selected a different human piece
                 const pieceMoves = calculateValidMoves(pieceInClickedSquare.id, gameState.board, gameState.pieces, gameState.lionMovedLastTurn === 'human' ? 'human' : null);
                 let messageForSelection = `Selected ${pieceInClickedSquare.animal}. Choose a destination.`;
                 if (pieceMoves.length === 0) {
@@ -461,6 +453,7 @@ export default function SavannahChasePage() {
                         toast({ title: "Lion Paused", description: "Your Lion must rest this turn." });
                         messageForSelection = "Lion is paused. Select another piece.";
                     } else {
+                        toast({ title: "No Moves", description: `This ${pieceInClickedSquare.animal} has no valid moves.` });
                         messageForSelection = `This ${pieceInClickedSquare.animal} has no valid moves. Select another piece.`;
                     }
                 }
@@ -471,11 +464,11 @@ export default function SavannahChasePage() {
                     message: messageForSelection,
                 }));
             }
-        } else { 
+        } else { // Clicked an empty square or AI piece (and not a valid move target)
           setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [], message: `Invalid move. ${gameState.playerTwoName}'s turn (Black). Select a piece.` }));
         }
       }
-    } else if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { 
+    } else if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { // No piece selected yet, and clicked a human piece
         const pieceMoves = calculateValidMoves(pieceInClickedSquare.id, gameState.board, gameState.pieces, gameState.lionMovedLastTurn === 'human' ? 'human' : null);
         let messageForSelection = `Selected ${pieceInClickedSquare.animal}. Highlighting valid moves.`;
         if (pieceMoves.length === 0) {
@@ -493,7 +486,7 @@ export default function SavannahChasePage() {
             validMoves: pieceMoves,
             message: messageForSelection,
          }));
-    } else { 
+    } else { // Clicked an empty square or AI piece with no selection
         setGameState(prev => ({ ...prev, message: `${gameState.playerTwoName}'s turn (Black). Select one of your pieces.` }));
     }
   }, [gameState, calculateValidMoves, checkWinCondition, toast, processSpecialFieldEffects, isLoadingAI]);
@@ -568,16 +561,21 @@ export default function SavannahChasePage() {
             let isValidFinalMove = true; 
             let capturedPieceAnimal: AnimalType | undefined = undefined;
             
-            if (targetSquare.pieceId) { 
+            if (targetSquare.pieceId) { // Potential capture
                 const targetPieceDetails = gameState.pieces[targetSquare.pieceId];
-                if (targetPieceDetails.player === 'ai') { 
+                if (targetPieceDetails.player === 'ai') { // Can't capture own piece
                     isValidFinalMove = false; 
-                } else { 
+                } else { // Capturing human piece
                     capturedPieceAnimal = targetPieceDetails.animal;
+                    // GDD Schlagregeln #2 (Lion can ONLY be captured by enemy Lion or Giraffe)
+                    // This is when *AI* is capturing Human's Lion.
                     if (targetPieceDetails.animal === 'lion' && !(piece.animal === 'lion' || piece.animal === 'giraffe')) {
                         isValidFinalMove = false; 
                     }
-                    if (piece.animal === 'gazelle' && targetPieceDetails.animal === 'lion') { // Redundant, but safe
+                    // GDD Schlagregeln #1 (Gazelle cannot capture Lion)
+                    // This is already handled in calculateValidMoves for Gazelle,
+                    // but an explicit check here for AI's Gazelle is safe.
+                    if (piece.animal === 'gazelle' && targetPieceDetails.animal === 'lion') {
                         isValidFinalMove = false;
                     }
                     if (isValidFinalMove) isCapture = true;
@@ -590,7 +588,6 @@ export default function SavannahChasePage() {
           }
         }
         
-        let nextLionMovedLastTurnState = gameState.lionMovedLastTurn;
         let chosenMoveData = null;
 
         const captureMoves = allAiMoves.filter(m => m.isCapture);
@@ -603,9 +600,10 @@ export default function SavannahChasePage() {
           if (lionCaptures.length > 0) chosenMoveData = lionCaptures[Math.floor(Math.random() * lionCaptures.length)];
           else if (giraffeCaptures.length > 0) chosenMoveData = giraffeCaptures[Math.floor(Math.random() * giraffeCaptures.length)];
           else if (gazelleCaptures.length > 0) chosenMoveData = gazelleCaptures[Math.floor(Math.random() * gazelleCaptures.length)];
-          else chosenMoveData = captureMoves[Math.floor(Math.random() * captureMoves.length)]; // Should not happen if above logic is sound
-
-        } else if (allAiMoves.length > 0) {
+          // else chosenMoveData = captureMoves[Math.floor(Math.random() * captureMoves.length)]; // Fallback if only other captures exist
+        }
+        
+        if (!chosenMoveData && allAiMoves.length > 0) { // If no capture moves, or none of the prioritized ones, pick any valid move
           chosenMoveData = allAiMoves[Math.floor(Math.random() * allAiMoves.length)];
         }
 
@@ -615,42 +613,46 @@ export default function SavannahChasePage() {
 
           let newPieces = JSON.parse(JSON.stringify(gameState.pieces));
           let newBoard = gameState.board.map(r => r.map(s => ({ ...s } as Square)));
-          let newHumanPlayerCapturesAiScore = { ...gameState.humanCapturedAIScore };
+          // let newHumanPlayerCapturesAiScore = { ...gameState.humanCapturedAIScore }; // AI is moving, so this score doesn't change
           let newAiPlayerCapturesHumanScore = { ...gameState.aiCapturedHumanScore };
 
+          let currentLionMovedLastTurn = gameState.lionMovedLastTurn;
           if (aiSelectedPiece.animal === 'lion') {
-              nextLionMovedLastTurnState = 'ai'; 
-          }
-          else if (gameState.lionMovedLastTurn === 'ai') { 
-             nextLionMovedLastTurnState = null; 
+              currentLionMovedLastTurn = 'ai'; 
+          } else if (gameState.lionMovedLastTurn === 'ai') { 
+             currentLionMovedLastTurn = null; // Reset pause if AI moved non-lion
           }
           
           let moveMessage = "";
+          // Clear AI piece from its original position on the new board
           newBoard[aiSelectedPiece.position.row][aiSelectedPiece.position.col].pieceId = null;
           
           const targetSquareContentOriginalBoard = gameState.board[aiMoveToMake.row][aiMoveToMake.col];
-          if (targetSquareContentOriginalBoard.pieceId) {
+          if (targetSquareContentOriginalBoard.pieceId) { // AI Capture
             const capturedPieceOriginal = gameState.pieces[targetSquareContentOriginalBoard.pieceId];
+            // Ensure it's a human piece (already filtered by allAiMoves logic, but good for clarity)
             if (capturedPieceOriginal.player === 'human') {
-                delete newPieces[targetSquareContentOriginalBoard.pieceId];
-                newAiPlayerCapturesHumanScore[capturedPieceOriginal.animal]++; 
-                const capturerName = gameState.playerOneName; 
-                const capturedOwnerName = gameState.playerTwoName; 
+                delete newPieces[targetSquareContentOriginalBoard.pieceId]; // Remove captured human piece
+                newAiPlayerCapturesHumanScore[capturedPieceOriginal.animal]++; // Update AI's score
+                const capturerName = gameState.playerOneName; // AI
+                const capturedOwnerName = gameState.playerTwoName; // Human
                 moveMessage = `${capturerName} ${aiSelectedPiece.animal} captured ${capturedOwnerName} ${capturedPieceOriginal.animal}.`;
                 toast({ title: "AI Capture!", description: moveMessage });
             }
           }
           
-          newPieces[aiSelectedPiece.id] = { ...aiSelectedPiece, position: { row: aiMoveToMake.row, col: aiMoveToMake.col } };
+          // Tentatively place AI piece on target square (before special effects)
+          // newPieces[aiSelectedPiece.id] = { ...aiSelectedPiece, position: { row: aiMoveToMake.row, col: aiMoveToMake.col } };
+          // newBoard[aiMoveToMake.row][aiMoveToMake.col].pieceId = aiSelectedPiece.id; // Handled by processSpecialFieldEffects
 
           const effectResult = processSpecialFieldEffects(aiSelectedPiece.id, aiMoveToMake.row, aiMoveToMake.col, newBoard, newPieces);
           newBoard = effectResult.board;
-          newPieces = effectResult.pieces; 
+          newPieces = effectResult.pieces; // newPieces has updated pos
           
           if (effectResult.messageUpdate && !moveMessage) moveMessage = effectResult.messageUpdate;
           else if (effectResult.messageUpdate) moveMessage += " " + effectResult.messageUpdate;
           
-          const winner = checkWinCondition(newPieces, newHumanPlayerCapturesAiScore, newAiPlayerCapturesHumanScore);
+          const winner = checkWinCondition(newPieces, gameState.humanCapturedAIScore, newAiPlayerCapturesHumanScore);
           let nextPlayerTurn: PlayerType = 'human';
           let gameStatusMessage = winner 
             ? `${winner === 'human' ? gameState.playerTwoName : gameState.playerOneName} wins!` 
@@ -658,13 +660,11 @@ export default function SavannahChasePage() {
 
           if (!moveMessage && !winner) { 
              const movedPieceOriginalPos = gameState.pieces[aiSelectedPiece.id].position; 
-             gameStatusMessage = `${gameState.playerOneName} ${aiSelectedPiece.animal} from (${movedPieceOriginalPos.row},${movedPieceOriginalPos.col}) to (${effectResult.finalPosition.row},${effectResult.finalPosition.col}). ${gameStatusMessage}`;
+             const finalPos = newPieces[aiSelectedPiece.id].position;
+             gameStatusMessage = `${gameState.playerOneName} ${aiSelectedPiece.animal} from (${movedPieceOriginalPos.row},${movedPieceOriginalPos.col}) to (${finalPos.row},${finalPos.col}). ${gameStatusMessage}`;
           } else if (moveMessage && !winner) { 
             gameStatusMessage = `${moveMessage} ${gameStatusMessage}`;
           }
-           if (winner && nextLionMovedLastTurnState === 'ai' && aiSelectedPiece.animal !== 'lion') {
-             nextLionMovedLastTurnState = null; 
-           }
 
           setGameState(prev => ({
             ...prev,
@@ -674,20 +674,21 @@ export default function SavannahChasePage() {
             winner,
             isGameOver: !!winner,
             message: gameStatusMessage,
-            humanCapturedAIScore: newHumanPlayerCapturesAiScore,
+            // humanCapturedAIScore: gameState.humanCapturedAIScore, // Stays same
             aiCapturedHumanScore: newAiPlayerCapturesHumanScore,
-            lionMovedLastTurn: nextLionMovedLastTurnState,
+            lionMovedLastTurn: currentLionMovedLastTurn,
           }));
 
-        } else { 
-           if (gameState.lionMovedLastTurn === 'ai') {
-             nextLionMovedLastTurnState = null;
+        } else { // AI has no valid moves
+           let currentLionMovedLastTurn = gameState.lionMovedLastTurn;
+           if (gameState.lionMovedLastTurn === 'ai') { // If AI lion was paused, unpause it as turn passes
+             currentLionMovedLastTurn = null;
            }
           setGameState(prev => ({ 
             ...prev, 
             currentPlayer: 'human', 
             message: `${gameState.playerOneName} (AI) has no valid moves. ${gameState.playerTwoName}'s turn (Black).`,
-            lionMovedLastTurn: nextLionMovedLastTurnState,
+            lionMovedLastTurn: currentLionMovedLastTurn,
           }));
         }
         setIsLoadingAI(false);
@@ -695,16 +696,15 @@ export default function SavannahChasePage() {
       performAiMove();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState.currentPlayer, gameState.isGameOver]); 
+  }, [gameState.currentPlayer, gameState.isGameOver, calculateValidMoves, checkWinCondition, processSpecialFieldEffects, toast]); 
 
   const handleResetGame = useCallback(() => {
-    setShowTutorial(true); // Show tutorial on reset
-    // Game state will be re-initialized by handleStartGame when tutorial is finished
+    setShowTutorial(true); 
   }, []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
-    if (gameState.isGameOver && !showTutorial) { // Only auto-reset if tutorial is not showing
+    if (gameState.isGameOver && !showTutorial) { 
       timeoutId = setTimeout(() => {
         handleResetGame();
       }, 3000); 
@@ -722,7 +722,6 @@ export default function SavannahChasePage() {
     <div className="flex flex-col items-center min-h-screen bg-background text-foreground p-4 sm:p-6 md:p-8">
       <header className="mb-6 text-center">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary tracking-tight">Savannah Chase</h1>
-        {/* Subtitle removed */}
       </header>
 
       <main className="flex flex-col lg:flex-row gap-6 md:gap-8 w-full max-w-6xl">
@@ -735,7 +734,7 @@ export default function SavannahChasePage() {
             onSquareClick={handleSquareClick}
             currentPlayer={gameState.currentPlayer} 
             isGameOver={gameState.isGameOver}
-            getAnimalChar={getAnimalChar} // Pass the function
+            getAnimalChar={getAnimalChar} 
           />
            <div className="mt-4 text-center lg:text-left w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
             <p className={`text-lg font-medium p-3 rounded-md shadow ${gameState.isGameOver ? (gameState.winner === 'human' ? 'bg-green-600 text-white' : (gameState.winner === 'ai' ? 'bg-red-600 text-white' : 'bg-yellow-500 text-black') ) : 'bg-card text-card-foreground'}`}>

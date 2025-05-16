@@ -50,24 +50,12 @@ export interface GameState {
 
 export const BOARD_SIZE = 7;
 
-// GDD v0.4 specifies these fixed terrain positions
-// (row, col) 0-indexed from top-left
-export const TERRAIN_POSITIONS = {
-  SWAMP_1: { row: 1, col: 3 }, // GDD (D2) if D is col 3, row 2 is idx 1
-  SWAMP_2: { row: 5, col: 3 }, // GDD (D6)
-  HILL_1:  { row: 2, col: 3 }, // GDD (D3)
-  HILL_2:  { row: 4, col: 3 }, // GDD (D5)
-  RIFT_CENTER: { row: 3, col: 3 } // GDD (D4)
-};
-
-// Number of *additional* random terrains to place, beyond the fixed GDD ones if any.
-// If fixed GDD terrains are used, these counts can be 0 or more for *extra* random ones.
-// If no fixed GDD terrains are used, these will be the total random ones.
-// For now, let's make GDD terrains fixed and add a few more random ones.
-export const NUM_RANDOM_SWAMPS = 0; // GDD has 2 fixed swamps
-export const NUM_RANDOM_HILLS = 0;  // GDD has 2 fixed hills
-export const NUM_RANDOM_RIFTS = 2;  // GDD has 1 fixed rift, let's add 2 more random ones.
-                                    // These random rifts will NOT be on start rows.
-                                    // Total 3 rifts.
+// Number of random terrains to place.
+// These will be placed on rows 2, 3, 4 (0-indexed middle rows).
+// They will not be placed on starting rows (0,1 for AI; 5,6 for Human).
+export const NUM_RANDOM_SWAMPS = 3; 
+export const NUM_RANDOM_HILLS = 2;  
+export const NUM_RANDOM_RIFTS = 2;  
+    
 
     
