@@ -15,22 +15,22 @@ import {z}from 'genkit';
 const AnalyzeGameStateInputSchema = z.object({
   boardState: z
     .string()
-    .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Schwarz), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. WZ für Spieler (Weiß) Gazelle, BL für KI (Schwarz) Löwe, BG für KI (Schwarz) Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
+    .describe('Der aktuelle Zustand des 7x8 Spielbretts (7 Reihen, 8 Spalten) als Zeichenkette. Reihen 0-indiziert (oben, KI Schwarz), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. WZ für Spieler (Weiß) Gazelle, BL für KI (Schwarz) Löwe, BG für KI (Schwarz) Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
   playerOneName: z.string().describe('Der Name von Spieler Eins (KI, Schwarz, Oben).'),
   playerTwoName: z.string().describe('Der Name von Spieler Zwei (Spieler, Weiß, Unten).'),
 });
 export type AnalyzeGameStateInput = z.infer<typeof AnalyzeGameStateInputSchema>;
 
 const AnalyzeGameStateOutputSchema = z.object({
-  playerOneSummary: z // AI Player (Schwarz, Top)
+  playerOneSummary: z // AI Player (Schwarz, Oben)
     .string()
-    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Eins (KI, Schwarz, Oben). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen, blockierte Figuren und Möglichkeiten zur Verbesserung der Position.'),
-  playerTwoSummary: z // Human Player (Weiß, Bottom)
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Eins (KI, Schwarz, Oben). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen, blockierte Figuren und Möglichkeiten zur Verbesserung der Position. Achte auf die Auswirkungen von Sumpf (Pause für L/Z), Kluft (Verschiebung) und Hügel (nur G).'),
+  playerTwoSummary: z // Human Player (Weiß, Unten)
     .string()
-    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Zwei (Spieler, Weiß, Unten). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen, blockierte Figuren und Möglichkeiten zur Verbesserung der Position.'),
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Zwei (Spieler, Weiß, Unten). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen, Fortschritt zu den Siegbedingungen, blockierte Figuren und Möglichkeiten zur Verbesserung der Position. Achte auf die Auswirkungen von Sumpf (Pause für L/Z), Kluft (Verschiebung) und Hügel (nur G).'),
   overallAssessment: z
     .string()
-    .describe("Eine kurze Gesamtbewertung des Spielzustands, z.B. 'KI (Schwarz) hat einen leichten Vorteil durch bessere Löwenpositionierung.' oder 'Spieler (Weiß) ist in einer schwierigen Position, da viele Figuren blockiert sind.'"),
+    .describe("Eine kurze Gesamtbewertung des Spielzustands, z.B. 'KI (Schwarz) hat einen leichten Vorteil durch bessere Löwenpositionierung.' oder 'Spieler (Weiß) ist in einer schwierigen Position, da viele Figuren blockiert sind.' Berücksichtige auch, wer möglicherweise von den aktuellen Spezialfeldern profitiert oder dadurch behindert wird."),
 });
 export type AnalyzeGameStateOutput = z.infer<typeof AnalyzeGameStateOutputSchema>;
 
@@ -41,11 +41,11 @@ export async function analyzeGameState(
 }
 
 const prompt = ai.definePrompt({
-  name: 'analyzeGameStatePrompt_v0_4_randomRiftsAndSwampRules_DE_v2',
+  name: 'analyzeGameStatePrompt_v0_4_7x8_randomTerrains_DE',
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
-  prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und Sumpf-/Hügel-Regeln).
-Das Brett ist 7x7 groß. KI (B, Schwarz, {{{playerOneName}}}) startet in den Reihen 0/1. Spieler (W, Weiß, {{{playerTwoName}}}) startet in den Reihen 6/5.
+  prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und Sumpf-/Hügel-Regeln auf einem 7x8 Brett).
+Das Brett ist 7x8 groß (7 Reihen, 8 Spalten). KI (B, Schwarz, {{{playerOneName}}}) startet in den Reihen 0/1. Spieler (W, Weiß, {{{playerTwoName}}}) startet in den Reihen 6/5 (Reihe 6 ist die letzte Reihe).
 Figuren:
 - Löwe (L): Zieht 1-2 Felder (jede Richtung). Pausiert 1 Zug nach Bewegung. Nur von Löwe/Giraffe schlagbar. Wenn er auf Sumpf (S) landet, pausiert er nächste Runde. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
@@ -72,12 +72,14 @@ Beziehe die Sumpf-Regeln (Pause für Löwe/Gazelle, kein Betreten für Giraffe) 
 Beziehe die Hügel-Regeln (NUR Giraffen können betreten) und deren strategische Nutzung ein.
 Beziehe die Kluft-Regeln (Schiebeeffekt, variable Richtung, Giraffe kann nicht überspringen) und das damit verbundene Risiko/Potenzial ein.
 Sei prägnant und strategisch. Antworte auf Deutsch.
+Achte darauf, ob Figuren blockiert sind oder wenige Zugoptionen haben. Überlege, wie man Figuren befreien oder die Position verbessern kann.
+Vermeide unnötige Wiederholungen in den Zusammenfassungen.
 `,
 });
 
 const analyzeGameStateFlow = ai.defineFlow(
   {
-    name: 'analyzeGameStateFlow_v0_4_randomRiftsAndSwampRules_DE_v2',
+    name: 'analyzeGameStateFlow_v0_4_7x8_randomTerrains_DE',
     inputSchema: AnalyzeGameStateInputSchema,
     outputSchema: AnalyzeGameStateOutputSchema,
   },
@@ -85,9 +87,10 @@ const analyzeGameStateFlow = ai.defineFlow(
     const {output} = await prompt(input);
     if (!output || !output.playerOneSummary || !output.playerTwoSummary || !output.overallAssessment) {
         console.error('KI-Analyse konnte keine vollständige Ausgabe erzeugen. Eingabe:', input, 'Rohe Ausgabe:', output);
+        // Fallback, falls die KI nicht die erwartete Struktur liefert
         return {
-            playerOneSummary: "Analysedaten unvollständig. Die KI konnte die Spielsituation nicht vollständig bewerten.",
-            playerTwoSummary: "Analysedaten unvollständig. Die KI konnte die Spielsituation nicht vollständig bewerten.",
+            playerOneSummary: "Analysedaten unvollständig. Die KI konnte die Spielsituation für Spieler Eins nicht vollständig bewerten. Bitte überprüfe die Konsole für Details.",
+            playerTwoSummary: "Analysedaten unvollständig. Die KI konnte die Spielsituation für Spieler Zwei nicht vollständig bewerten. Bitte überprüfe die Konsole für Details.",
             overallAssessment: "Spielbewertung konnte aufgrund unvollständiger KI-Ausgabe nicht ermittelt werden."
         };
     }

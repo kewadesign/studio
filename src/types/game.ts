@@ -39,25 +39,23 @@ export interface GameState {
   selectedPieceId?: string | null;
   validMoves: { row: number; col: number }[];
   winner?: PlayerType | null;
-  playerOneName: string; // AI (White, Top)
-  playerTwoName: string; // Human (Black, Bottom)
-  humanCapturedAIScore: CapturedPieces; // Pieces AI (White) lost, captured by Human (Black)
-  aiCapturedHumanScore: CapturedPieces;   // Pieces Human (Black) lost, captured by AI (White)
+  playerOneName: string; // AI (Schwarz, Oben)
+  playerTwoName: string; // Spieler (Weiß, Unten)
+  humanCapturedAIScore: CapturedPieces; // Pieces AI (Schwarz) lost, captured by Spieler (Weiß)
+  aiCapturedHumanScore: CapturedPieces;   // Pieces Spieler (Weiß) lost, captured by AI (Schwarz)
   lionMovedLastTurn: PlayerType | null;
-  swampSkipTurnForPiece: { pieceId: string; player: PlayerType } | null; // Piece that landed on swamp and must skip its owner's next turn
+  swampSkipTurnForPiece: { pieceId: string; player: PlayerType } | null;
   isGameOver: boolean;
   message: string;
 }
 
-export const BOARD_SIZE = 7;
+export const BOARD_ROWS = 7;
+export const BOARD_COLS = 8;
 
-// Number of random terrains to place.
-// These will be placed on rows 2, 3, 4 (0-indexed middle rows for a 7x7 board).
-// They will not be placed on starting rows (0,1 for AI; 5,6 for Human).
 export const NUM_RANDOM_SWAMPS = 3;
 export const NUM_RANDOM_HILLS = 2;
 export const NUM_RANDOM_RIFTS = 2;
 
 // Rows restricted from having random terrain placed on them (player starting rows)
-// For 7x7: AI (White, Top) on rows 0,1. Human (Black, Bottom) on rows 5,6.
-export const TERRAIN_RESTRICTED_ROWS: number[] = [0, 1, 5, 6];
+// AI (Schwarz, Oben) on rows 0,1. Spieler (Weiß, Unten) on rows 5,6 (for 7 total rows).
+export const TERRAIN_RESTRICTED_ROWS: number[] = [0, 1, BOARD_ROWS - 2, BOARD_ROWS - 1];

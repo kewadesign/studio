@@ -1,9 +1,8 @@
 
 'use client';
 import React from 'react';
-import type { Board, Piece, GameState, TerrainType, RiftDirection, AnimalType } from '@/types/game'; 
+import type { Board, Piece, GameState, TerrainType, RiftDirection, AnimalType } from '@/types/game';
 import GamePiece from './GamePiece';
-import { BOARD_SIZE } from '@/types/game';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface GameBoardProps {
@@ -14,7 +13,9 @@ interface GameBoardProps {
   onSquareClick: (row: number, col: number) => void;
   currentPlayer: GameState['currentPlayer'];
   isGameOver: boolean;
-  getAnimalChar: (animal: AnimalType) => string; 
+  getAnimalChar: (animal: AnimalType) => string;
+  boardCols: number;
+  boardRows: number; // Hinzugefügt, obwohl nicht direkt für grid-cols verwendet, aber gut für Kontext
 }
 
 const getTerrainDisplayChar = (terrain: TerrainType): string => {
@@ -28,9 +29,9 @@ const getTerrainDisplayChar = (terrain: TerrainType): string => {
 
 const getTerrainColorClass = (terrain: TerrainType): string => {
   switch (terrain) {
-    case 'rift': return 'text-destructive font-bold'; 
-    case 'swamp': return 'text-emerald-600 dark:text-emerald-400 font-bold'; 
-    case 'hill': return 'text-yellow-700 dark:text-yellow-500 font-bold';  
+    case 'rift': return 'text-destructive font-bold';
+    case 'swamp': return 'text-emerald-600 dark:text-emerald-400 font-bold';
+    case 'hill': return 'text-yellow-700 dark:text-yellow-500 font-bold';
     default: return 'text-muted-foreground';
   }
 }
@@ -53,14 +54,16 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onSquareClick,
   currentPlayer,
   isGameOver,
-  getAnimalChar, 
+  getAnimalChar,
+  boardCols,
 }) => {
-  const gridColsClass = `grid-cols-${BOARD_SIZE}`; 
+  // Dynamische grid-cols basierend auf boardCols
+  const gridColsClass = `grid-cols-${boardCols}`;
 
   return (
-    <div 
-      className={`grid ${gridColsClass} gap-1 p-2 bg-card rounded-lg shadow-lg aspect-square w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl`}
-      style={{ gridTemplateColumns: `repeat(${BOARD_SIZE}, minmax(0, 1fr))` }}
+    <div
+      className={`grid ${gridColsClass} gap-1 p-2 bg-card rounded-lg shadow-lg aspect-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl`}
+      style={{ gridTemplateColumns: `repeat(${boardCols}, minmax(0, 1fr))` }}
     >
       {board.flat().map((square) => {
         const piece = square.pieceId ? pieces[square.pieceId] : null;
@@ -73,16 +76,15 @@ const GameBoard: React.FC<GameBoardProps> = ({
         let cursorClass = 'cursor-default';
 
         if (isValidMove) {
-          // Changed from green to amber (yellow-orange)
-          squareBgClass = 'bg-amber-400/50 dark:bg-amber-500/50'; 
+          squareBgClass = 'bg-amber-400/50 dark:bg-amber-500/50';
           cursorClass = 'cursor-pointer hover:bg-amber-500/60 dark:hover:bg-amber-600/60';
         } else if (piece && piece.player === currentPlayer && !isGameOver && currentPlayer === 'human') {
           squareBgClass += ' hover:bg-primary/20';
           cursorClass = 'cursor-pointer';
         }
-        
+
         if (isSelected) {
-            squareBgClass = 'bg-primary/30'; 
+            squareBgClass = 'bg-primary/30';
         }
 
         return (
@@ -92,13 +94,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
             onClick={() => !isGameOver && onSquareClick(square.row, square.col)}
             role="button"
             tabIndex={0}
-            aria-label={`Feld ${square.row + 1}, ${String.fromCharCode(65 + square.col)}${piece ? `, enthält ${piece.player} ${piece.animal}` : ''}${square.terrain !== 'none' && !piece ? `, Terrain: ${square.terrain}` : ''}${isValidMove ? ', gültiger Zug' : ''}`}
+            aria-label={`Feld ${square.row + 1}, ${String.fromCharCode(65 + square.col)}${piece ? `, enthält ${piece.player === 'human' ? 'Spieler (Weiß)' : 'KI (Schwarz)'} ${getAnimalChar(piece.animal)}` : ''}${square.terrain !== 'none' && !piece ? `, Terrain: ${square.terrain}` : ''}${isValidMove ? ', gültiger Zug' : ''}`}
           >
             {piece && (
-              <GamePiece 
-                piece={piece} 
+              <GamePiece
+                piece={piece}
                 isSelected={isSelected}
-                displayChar={getAnimalChar(piece.animal)} 
+                displayChar={getAnimalChar(piece.animal)}
               />
             )}
             {!piece && square.terrain !== 'none' && (
