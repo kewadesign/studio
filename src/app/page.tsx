@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 const initialPiecesSetup: Record<string, Omit<Piece, 'id'>> = {
   // AI Pieces (Player One - Schwarz, Oben) - Player 'ai'
-  'ai_giraffe_c1': { animal: 'giraffe', player: 'ai', position: { row: 0, col: 2 } }, // C1 (Original C1 auf 7x7)
+  'ai_giraffe_c1': { animal: 'giraffe', player: 'ai', position: { row: 0, col: 2 } }, // C1 (Original C1 auf 8x7)
   'ai_lion_d1':    { animal: 'lion',    player: 'ai', position: { row: 0, col: 3 } }, // D1
   'ai_giraffe_e1': { animal: 'giraffe', player: 'ai', position: { row: 0, col: 4 } }, // E1
   'ai_gazelle_b2': { animal: 'gazelle', player: 'ai', position: { row: 1, col: 1 } }, // B2
@@ -980,13 +980,13 @@ export default function SavannahChasePage() {
     {terrain: 'hill', name: "Hügel", description: "Nur Giraffen können betreten."},
   ];
 
-  const pieceLegendItems: {char: string, name: string, playerType: 'human' | 'ai'}[] = [
-    {char: 'L', name: `Löwe (${gameState.playerTwoName})`, playerType: 'human'},
-    {char: 'G', name: `Giraffe (${gameState.playerTwoName})`, playerType: 'human'},
-    {char: 'Z', name: `Gazelle (${gameState.playerTwoName})`, playerType: 'human'},
-    {char: 'L', name: `Löwe (${gameState.playerOneName})`, playerType: 'ai'},
-    {char: 'G', name: `Giraffe (${gameState.playerOneName})`, playerType: 'ai'},
-    {char: 'Z', name: `Gazelle (${gameState.playerOneName})`, playerType: 'ai'},
+  const pieceLegendItems: {char: string, name: string, playerType: 'human' | 'ai', rule: string}[] = [
+    {char: 'L', name: `Löwe (${gameState.playerTwoName})`, playerType: 'human', rule: "Zieht 1-2 Felder (jede Richtung). Pausiert nächste Runde."},
+    {char: 'G', name: `Giraffe (${gameState.playerTwoName})`, playerType: 'human', rule: "Zieht max. 2 Felder (H/V). Kann Sumpf nicht betreten/überspringen. Kann Hügel betreten. Kann Kluft nicht überspringen."},
+    {char: 'Z', name: `Gazelle (${gameState.playerTwoName})`, playerType: 'human', rule: "Zieht 1 Feld vorwärts. Schlägt 1 Feld diag. vorwärts. Kann L/G nicht schlagen. Kann gegn. Gazellen schlagen."},
+    {char: 'L', name: `Löwe (${gameState.playerOneName})`, playerType: 'ai', rule: "Zieht 1-2 Felder (jede Richtung). Pausiert nächste Runde."},
+    {char: 'G', name: `Giraffe (${gameState.playerOneName})`, playerType: 'ai', rule: "Zieht max. 2 Felder (H/V). Kann Sumpf nicht betreten/überspringen. Kann Hügel betreten. Kann Kluft nicht überspringen."},
+    {char: 'Z', name: `Gazelle (${gameState.playerOneName})`, playerType: 'ai', rule: "Zieht 1 Feld vorwärts. Schlägt 1 Feld diag. vorwärts. Kann L/G nicht schlagen. Kann gegn. Gazellen schlagen."},
   ];
 
 
@@ -1195,10 +1195,13 @@ export default function SavannahChasePage() {
               ))}
               <h5 className="font-medium text-muted-foreground mt-3 mb-1">Figuren:</h5>
               {pieceLegendItems.map((item, index) => (
-                 <div key={`piece-${index}`} className="flex items-center gap-2 py-1">
-                  <PieceLegendIcon char={item.char} playerType={item.playerType} />
-                  <span className="text-muted-foreground">{item.name}</span>
-                </div>
+                 <div key={`piece-${index}`} className="flex flex-col items-start gap-1 py-1">
+                    <div className="flex items-center gap-2">
+                      <PieceLegendIcon char={item.char} playerType={item.playerType} />
+                      <span className="text-muted-foreground font-semibold">{item.name}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground/80 ml-8 pl-1">{item.rule}</p>
+                  </div>
               ))}
             </CardContent>
           </Card>
@@ -1208,3 +1211,5 @@ export default function SavannahChasePage() {
     </div>
   );
 }
+
+
