@@ -24,13 +24,13 @@ export type AnalyzeGameStateInput = z.infer<typeof AnalyzeGameStateInputSchema>;
 const AnalyzeGameStateOutputSchema = z.object({
   playerOneSummary: z // AI Player (White, Top)
     .string()
-    .describe('A short summary of the advantages/disadvantages for player one (AI, White, Top). Focus on board control, piece safety, threats, and progress towards win conditions.'),
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Eins (KI, Weiß, Oben). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen und Fortschritt zu den Siegbedingungen.'),
   playerTwoSummary: z // Human Player (Black, Bottom)
     .string()
-    .describe('A short summary of the advantages/disadvantages for player two (Human, Black, Bottom). Focus on board control, piece safety, threats, and progress towards win conditions.'),
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Zwei (Mensch, Schwarz, Unten). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen und Fortschritt zu den Siegbedingungen.'),
   overallAssessment: z
     .string()
-    .describe('A brief overall assessment of the game state, e.g., "AI (White) has a slight advantage due to better Lion positioning."'),
+    .describe("Eine kurze Gesamtbewertung des Spielzustands, z.B. 'KI (Weiß) hat einen leichten Vorteil durch bessere Löwenpositionierung.'"),
 });
 export type AnalyzeGameStateOutput = z.infer<typeof AnalyzeGameStateOutputSchema>;
 
@@ -86,9 +86,9 @@ const analyzeGameStateFlow = ai.defineFlow(
     if (!output || !output.playerOneSummary || !output.playerTwoSummary || !output.overallAssessment) {
         console.error('AI analysis failed to produce complete output. Input:', input, 'Raw Output:', output);
         return {
-            playerOneSummary: "Analysis data incomplete.",
-            playerTwoSummary: "Analysis data incomplete.",
-            overallAssessment: "Could not determine game assessment due to incomplete AI output."
+            playerOneSummary: "Analysedaten unvollständig.",
+            playerTwoSummary: "Analysedaten unvollständig.",
+            overallAssessment: "Spielbewertung konnte aufgrund unvollständiger KI-Ausgabe nicht ermittelt werden."
         };
     }
     return output;

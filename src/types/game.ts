@@ -57,3 +57,7 @@ export const BOARD_SIZE = 7;
 export const NUM_RANDOM_SWAMPS = 3;
 export const NUM_RANDOM_HILLS = 2;
 export const NUM_RANDOM_RIFTS = 2;
+
+// Rows restricted from having random terrain placed on them (player starting rows)
+// For 7x7: AI (White, Top) on rows 0,1. Human (Black, Bottom) on rows 5,6.
+export const TERRAIN_RESTRICTED_ROWS: number[] = [0, 1, 5, 6];

@@ -23,7 +23,7 @@ const SuggestMoveInputSchema = z.object({
 export type SuggestMoveInput = z.infer<typeof SuggestMoveInputSchema>;
 
 const SuggestMoveOutputSchema = z.object({
-  suggestedMove: z.string().describe('A textual description of the suggested move, like "Move Gazelle from (1,1) to (2,1)" or "Move Lion from (0,3) to (3,3) to capture Giraffe". If a piece is paused, state that.'),
+  suggestedMove: z.string().describe("Eine textuelle Beschreibung des vorgeschlagenen Zuges, z.B. 'Bewege Gazelle von (1,1) nach (2,1)' oder 'Bewege Löwe von (0,3) nach (3,3) um Giraffe zu schlagen'. Wenn eine Figur pausiert, dies angeben."),
 });
 export type SuggestMoveOutput = z.infer<typeof SuggestMoveOutputSchema>;
 
@@ -87,7 +87,7 @@ const suggestMoveFlow = ai.defineFlow(
     const {output} = await prompt(input);
     if (!output || typeof output.suggestedMove !== 'string') {
       console.error('AI failed to produce a valid suggestedMove output. Input:', input, 'Raw Output:', output);
-      return { suggestedMove: `AI could not determine a move for ${input.playerTurn}. Please try again or make a manual move.` };
+      return { suggestedMove: `KI konnte keinen Zug für ${input.playerTurn} ermitteln. Bitte versuche es erneut oder mache einen manuellen Zug.` };
     }
     return output;
   }
