@@ -24,7 +24,7 @@ const tutorialSteps = [
   {
     icon: <TrendingUp className="inline-block mr-2 text-blue-500" />,
     title: 'Die Giraffe (G)',
-    content: 'Die Giraffe zieht bis zu 2 Felder, aber nur geradeaus (nicht diagonal). Sie darf keine Sümpfe (S) betreten und kann Klüfte nicht einfach überspringen. Nur Giraffen dürfen Hügel (H) betreten!',
+    content: 'Die Giraffe zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten und auch nicht darüber springen. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.',
   },
   {
     icon: <Sparkles className="inline-block mr-2 text-green-500" />,
@@ -39,7 +39,7 @@ const tutorialSteps = [
   {
     icon: <Waves className="inline-block mr-2 text-emerald-600" />,
     title: 'Spezialfeld: Sumpf (S)',
-    content: 'Betritt ein Löwe oder eine Gazelle einen Sumpf (S), müssen sie in ihrem nächsten Zug aussetzen. Giraffen dürfen Sümpfe gar nicht erst betreten!',
+    content: 'Betritt ein Löwe oder eine Gazelle einen Sumpf (S), müssen sie in ihrem nächsten Zug aussetzen. Giraffen dürfen Sümpfe gar nicht erst betreten.',
   },
   {
     icon: <Wind className="inline-block mr-2 text-destructive" />,

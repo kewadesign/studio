@@ -39,8 +39,8 @@ const prompt = ai.definePrompt({
 Das Brett ist ein 8x7 Gitter (8 Reihen, 7 Spalten). KI-Spieler (B, Schwarz, Oben) Figuren starten auf Reihe 0/1 und Spieler (W, Weiß, Unten) Figuren starten auf Reihe 7/6 (Reihe 7 ist die unterste Reihe für den Spieler).
 Figuren:
 - Löwe (L): Zieht 1-2 Felder (orthogonal/diagonal). Kann nicht springen. Muss 1 Zug nach Bewegung pausieren. Nur von gegn. Löwe oder Giraffe schlagbar. Wenn er auf Sumpf (S) landet, muss er nächste Runde pausieren. Kann Hügel (H) nicht betreten.
-- Giraffe (G): Zieht max. 2 Felder (orthogonal). Kann nicht springen. Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
-- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diagonal vorwärts. Kann Löwen und Giraffen nicht schlagen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
+- Giraffe (G): Zieht max. 2 Felder (orthogonal). Kann nicht springen. Kann Sumpf (S) nicht betreten und auch nicht darüber springen, wenn es das Zwischenfeld eines 2-Felder-Zugs ist. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
+- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diagonal vorwärts. Kann Löwen und Giraffen nicht schlagen, aber andere Gazellen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 
 Spieler: Spieler (W, Weiß, Unten), KI (B, Schwarz, Oben). Figurennotation: SpielerinitialTiercharakter (z.B. WZ, BL, BG).
 '..' bezeichnet ein leeres Feld.

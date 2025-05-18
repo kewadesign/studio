@@ -240,7 +240,7 @@ const GameRulesContent: React.FC = () => {
             <li><strong>Giraffe (G):</strong>
               <ul className="list-circle list-inside ml-4">
                 <li>Zieht maximal 2 Felder weit horizontal oder vertikal.</li>
-                <li>Darf nicht über andere Figuren springen (kann eine Kluft bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist).</li>
+                <li>Darf nicht über andere Figuren springen (kann eine Kluft bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist; kann einen Sumpf bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld ein Sumpf ist).</li>
                 <li>Kann gegnerische Figuren schlagen.</li>
                 <li>Kann Hügel (H) betreten. Andere Figuren nicht.</li>
                 <li>Kann Sumpf (S) nicht betreten.</li>
@@ -251,7 +251,7 @@ const GameRulesContent: React.FC = () => {
                 <li><strong>Bewegung:</strong> Zieht 1 Feld geradeaus (Spieler Weiß: Reihenindex sinkt; KI Schwarz: Reihenindex steigt).</li>
                 <li><strong>Schlagen:</strong> Schlägt 1 Feld diagonal vorwärts.</li>
                 <li>Kann gegnerischen Löwen NICHT schlagen.</li>
-                <li>Kann gegnerische Giraffen NICHT schlagen.</li>
+                <li>Kann gegnerische Giraffen NICHT schlagen. Kann aber gegnerische Gazellen schlagen.</li>
                 <li>Landet auf Sumpf (S): Muss nächste Runde pausieren.</li>
                 <li>Kann Hügel (H) nicht betreten.</li>
               </ul>
@@ -385,14 +385,15 @@ export default function SavannahChasePage() {
 
           const targetSquare = currentBoard[r][c];
           if (targetSquare.terrain === 'swamp') continue; // Giraffe cannot enter swamp
-          // Giraffe CAN enter Hill
+          // Giraffe CAN enter Hill (as per last rule update)
 
-          // Check path for intermediate pieces (no jumping) or rift skipping
+          // Check path for intermediate pieces (no jumping) or rift/swamp skipping
           if (dist === 2) {
             const intermediateRow = startRow + dr;
             const intermediateCol = startCol + dc;
             if (currentBoard[intermediateRow][intermediateCol].pieceId) break; // Path blocked by piece
             if (currentBoard[intermediateRow][intermediateCol].terrain === 'rift') continue; // Giraffe cannot jump over rift
+            if (currentBoard[intermediateRow][intermediateCol].terrain === 'swamp') continue; // Giraffe cannot jump over swamp
           }
 
           if (targetSquare.pieceId) {
@@ -433,10 +434,9 @@ export default function SavannahChasePage() {
             const targetPiece = currentPieces[targetSquare.pieceId];
             // Gazelle can capture enemy Gazelle.
             // Gazelle CANNOT capture enemy Lion.
-            // Gazelle CANNOT capture enemy Giraffe.
+            // Gazelle CANNOT capture enemy Giraffe. (New rule)
             if (targetPiece.player !== piece.player &&
-                targetPiece.animal !== 'lion' &&
-                targetPiece.animal !== 'giraffe') {
+                targetPiece.animal === 'gazelle') { // Only other gazelles
               moves.push({ row: captureR, col: captureC });
             }
           }
@@ -546,11 +546,11 @@ export default function SavannahChasePage() {
           if (capturedPieceOriginal.player === 'ai') {
             // Check if Lion is captured correctly
             if (capturedPieceOriginal.animal === 'lion' && !(selectedPiece.animal === 'lion' || selectedPiece.animal === 'giraffe')) {
-               toast({ title: "Ungültiger Fang", description: `Dein ${selectedPiece.animal} kann keinen Löwen fangen. Nur ein Löwe oder eine Giraffe kann das.`, variant: "destructive", duration: 4000 });
+               toast({ title: "Ungültiger Fang", description: `Deine ${selectedPiece.animal} kann keinen Löwen fangen. Nur ein Löwe oder eine Giraffe kann das.`, variant: "destructive", duration: 4000 });
                setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [] }));
                return;
             }
-            // Check Gazelle capture rules (handled by calculateValidMoves, but good for clarity)
+            // Check Gazelle capture rules
              if (selectedPiece.animal === 'gazelle' && (capturedPieceOriginal.animal === 'lion' || capturedPieceOriginal.animal === 'giraffe')) {
                 toast({ title: "Ungültiger Fang", description: `Deine Gazelle kann keine ${capturedPieceOriginal.animal} fangen.`, variant: "destructive", duration: 4000 });
                 setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [] }));
