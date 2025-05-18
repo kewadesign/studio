@@ -15,7 +15,7 @@ import {z}from 'genkit';
 const AnalyzeGameStateInputSchema = z.object({
   boardState: z
     .string()
-    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, AI White side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., BZ for Human Gazelle, WL for AI Lion, WG for AI Giraffe). Empty: "..". Terrain: K=Kluft (pushes piece in a game-defined random direction if landed on), S=Sumpf (Lions/Gazelles pause next turn, Giraffes cannot enter), H=Hügel (Giraffe cannot enter).'),
+    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, AI White side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., BZ for Human Gazelle, WL for AI Lion, WG for AI Giraffe). Empty: "..". Terrain: K=Kluft (pushes piece in a game-defined random direction if landed on), S=Sumpf (Lions/Gazelles pause next turn, Giraffes cannot enter), H=Hügel (Giraffes can enter).'),
   playerOneName: z.string().describe('The name of player one (AI, White, Top).'),
   playerTwoName: z.string().describe('The name of player two (Human, Black, Bottom).'),
 });
@@ -44,16 +44,16 @@ const prompt = ai.definePrompt({
   name: 'analyzeGameStatePrompt_v0_4_randomRiftsAndSwampRules',
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
-  prompt: `You are an expert game analyst for "Savannah Chase" (Version 0.4 GDD, with randomized rifts and new swamp rules).
+  prompt: `You are an expert game analyst for "Savannah Chase" (Version 0.4 GDD, with randomized rifts and new swamp/hill rules).
 The board is 7x7. AI (W, White) starts rows 0/1. Human (B, Black) starts rows 6/5.
 Pieces:
-- Lion (L): Moves 1-2 (any dir). Pauses 1 turn after moving. Capturable only by Lion/Giraffe. If lands on Sumpf (S), pauses next turn.
-- Giraffe (G): Moves max 2 (H/V). Cannot enter Hügel (H) or Sumpf (S).
+- Lion (L): Moves 1-2 squares (any dir). Pauses 1 turn after moving. Capturable only by Lion/Giraffe. If lands on Sumpf (S), pauses next turn.
+- Giraffe (G): Moves max 2 squares (H/V). Cannot enter Sumpf (S) squares. Can enter Hügel (H) squares.
 - Gazelle (Z): AI (White, Top) Gazelles move 1 square "forward" (increasing row index). Human (Black, Bottom) Gazelles move 1 square "forward" (decreasing row index). Captures 1 diag forward. Cannot capture Lion. If lands on Sumpf (S), pauses next turn.
 Terrain:
 'K' (Kluft/Rift): If a piece lands here, it's pushed in a specific, randomly determined direction (N, S, E, or W) until it hits an obstacle. Does not capture.
 'S' (Sumpf/Swamp): If a Lion or Gazelle lands here, they must pause their next turn. Giraffes cannot enter Sumpf squares.
-'H' (Hügel/Hill): Giraffe cannot enter. Other pieces can.
+'H' (Hügel/Hill): All pieces, including Giraffes, can enter.
 Win: Capture enemy Lion OR all 5 enemy Gazelles.
 
 Board State (0-indexed rows from AI White top, 0-indexed columns from left):
@@ -69,6 +69,7 @@ Analyze the board state. Provide:
 
 Consider material advantage, positional strength, king (Lion) safety, and threats.
 Factor in the new Sumpf rules for Lions and Gazelles (pause) and Giraffes (no entry).
+Factor in that Giraffes CAN enter Hügel (H) squares.
 Be concise and strategic.
 `,
 });

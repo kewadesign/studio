@@ -17,6 +17,7 @@ import Tutorial from '@/components/game/Tutorial';
 // Startaufstellung (0-indexed, Player One (AI, White) on rows 0/1, Player Two (Human, Black) on rows 6/5):
 // Player One (AI, White, 'ai'): G(0,2), L(0,3), G(0,4) | Z(1,1), Z(1,2), Z(1,3), Z(1,4), Z(1,5)
 // Player Two (Human, Black, 'human'): G(6,2), L(6,3), G(6,4) | Z(5,1), Z(5,2), Z(5,3), Z(5,4), Z(5,5)
+// Player 'ai' is White (Top), Player 'human' is Black (Bottom)
 
 const initialPieces: Record<string, Piece> = {
   // AI Pieces (Player One - White, Top) - Player 'ai'
@@ -54,11 +55,13 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
   Object.values(pieces).forEach(p => {
     occupiedByFixedTerrainOrPiece.add(`${p.position.row}-${p.position.col}`);
   });
+  
+  // Starting rows (0,1 for AI; 5,6 for Human) should not have random terrain
+  const restrictedRows = [0, 1, 5, 6];
 
   const availableCellsForRandomTerrain: {row: number, col: number}[] = [];
   for (let r = 0; r < BOARD_SIZE; r++) {
-    // Restrict random terrain to rows 2, 3, 4 (middle rows for 7x7 board)
-    if (r < 2 || r > 4) continue;
+    if (restrictedRows.includes(r)) continue; // Skip restricted rows
     for (let c = 0; c < BOARD_SIZE; c++) {
       if (!occupiedByFixedTerrainOrPiece.has(`${r}-${c}`)) {
         availableCellsForRandomTerrain.push({row: r, col: c});
@@ -66,6 +69,7 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
     }
   }
 
+  // Shuffle available cells
   for (let i = availableCellsForRandomTerrain.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [availableCellsForRandomTerrain[i], availableCellsForRandomTerrain[j]] = [availableCellsForRandomTerrain[j], availableCellsForRandomTerrain[i]];
@@ -85,13 +89,14 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
         ];
         board[cell.row][cell.col].riftDirection = riftDirections[Math.floor(Math.random() * riftDirections.length)];
       }
-      occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`);
+      occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`); // Mark as occupied for further placements
     }
   };
 
   placeTerrain('swamp', NUM_RANDOM_SWAMPS);
   placeTerrain('hill', NUM_RANDOM_HILLS);
   placeTerrain('rift', NUM_RANDOM_RIFTS);
+
 
   Object.values(pieces).forEach(p => {
     board[p.position.row][p.position.col].pieceId = p.id;
@@ -200,49 +205,54 @@ export default function SavannahChasePage() {
 
     if (piece.animal === 'lion') {
       const directions = [
-        [-1, 0], [1, 0], [0, -1], [0, 1],
-        [-1, -1], [-1, 1], [1, -1], [1, 1]
+        [-1, 0], [1, 0], [0, -1], [0, 1], // Orthogonal
+        [-1, -1], [-1, 1], [1, -1], [1, 1] // Diagonal
       ];
       for (const [dr, dc] of directions) {
         for (let dist = 1; dist <= 2; dist++) { // Lion moves 1-2 squares (GDD v0.4)
           const r = startRow + dr * dist;
           const c = startCol + dc * dist;
 
-          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break;
+          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break; // Off board
 
           const targetSquare = currentBoard[r][c];
           // Lion can move to swamp, but will pause next turn (handled after move)
+          // Lion can move to hill.
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
-            if (targetPiece.player !== piece.player) {
-              moves.push({ row: r, col: c });
+            if (targetPiece.player !== piece.player) { // Can capture opponent's piece
+              // Check if Lion is allowed to capture targetPiece (Lion can only be captured by Lion/Giraffe)
+              if (targetPiece.animal === 'lion' && !(piece.animal === 'lion' || piece.animal === 'giraffe')) {
+                 // This lion cannot capture the other lion
+              } else {
+                moves.push({ row: r, col: c });
+              }
             }
-            break;
+            break; // Path blocked by a piece
           }
-          moves.push({ row: r, col: c });
+          moves.push({ row: r, col: c }); // Empty square
         }
       }
     } else if (piece.animal === 'giraffe') {
-      const directions = [[-1,0], [1,0], [0,-1], [0,1]];
+      const directions = [[-1,0], [1,0], [0,-1], [0,1]]; // Horizontal/Vertical only
       for (const [dr, dc] of directions) {
-        for (let dist = 1; dist <= 2; dist++) {
+        for (let dist = 1; dist <= 2; dist++) { // Max 2 squares
           const r = startRow + dr * dist;
           const c = startCol + dc * dist;
 
-          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break;
+          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break; // Off board
 
           const targetSquare = currentBoard[r][c];
-          if (targetSquare.terrain === 'hill') continue; // Giraffe cannot enter Hill
           if (targetSquare.terrain === 'swamp') continue; // Giraffe cannot enter Swamp
 
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
-            if (targetPiece.player !== piece.player) {
-               moves.push({ row: r, col: c });
+            if (targetPiece.player !== piece.player) { // Can capture opponent's piece
+              moves.push({ row: r, col: c });
             }
-            break;
+            break; // Path blocked by a piece
           }
-          moves.push({ row: r, col: c });
+          moves.push({ row: r, col: c }); // Empty square
         }
       }
     } else if (piece.animal === 'gazelle') {
@@ -250,23 +260,27 @@ export default function SavannahChasePage() {
       // Player 'ai' (White, Top) Gazelles move "forward" (increasing row index)
       const forwardDir = piece.player === 'human' ? -1 : 1;
 
+      // Move 1 square forward
       const moveR = startRow + forwardDir;
       if (moveR >= 0 && moveR < BOARD_SIZE) {
         // Gazelle can move to swamp, but will pause next turn (handled after move)
+        // Gazelle can move to hill.
         if (!currentBoard[moveR][startCol].pieceId) {
           moves.push({ row: moveR, col: startCol });
         }
       }
 
+      // Capture 1 square diagonally forward
       const captureCols = [startCol - 1, startCol + 1];
       for (const captureC of captureCols) {
         const captureR = startRow + forwardDir;
         if (captureC >= 0 && captureC < BOARD_SIZE && captureR >=0 && captureR < BOARD_SIZE) {
           const targetSquare = currentBoard[captureR][captureC];
           // Gazelle can capture on swamp, but will pause next turn (handled after move)
+          // Gazelle can capture on hill.
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
-            if (targetPiece.player !== piece.player && targetPiece.animal !== 'lion') {
+            if (targetPiece.player !== piece.player && targetPiece.animal !== 'lion') { // Gazelle cannot capture Lion
               moves.push({ row: captureR, col: captureC });
             }
           }
@@ -292,6 +306,9 @@ export default function SavannahChasePage() {
 
     const originalPos = currentPieces[movedPieceId].position;
 
+    // Update piece's internal position first, before rift check
+    // newBoard[originalPos.row][originalPos.col].pieceId = null; // Clear old spot on board
+
     const landedSquare = newBoard[finalPos.row][finalPos.col];
 
     if (landedSquare.terrain === 'rift' && landedSquare.riftDirection) {
@@ -303,29 +320,41 @@ export default function SavannahChasePage() {
 
         let currentPushRow = finalPos.row;
         let currentPushCol = finalPos.col;
+        
+        // The piece is initially on the rift square, so we must clear it from the original board spot
+        // IF the rift is not the original spot (i.e., the piece didn't start on the rift)
+        if (originalPos.row !== finalPos.row || originalPos.col !== finalPos.col) {
+            newBoard[originalPos.row][originalPos.col].pieceId = null;
+        }
+
 
         // eslint-disable-next-line no-constant-condition
         while(true) {
             const nextRow = currentPushRow + pushDirection.dRow;
             const nextCol = currentPushCol + pushDirection.dCol;
 
-            if (nextRow < 0 || nextRow >= BOARD_SIZE || nextCol < 0 || nextCol >= BOARD_SIZE) {
+            if (nextRow < 0 || nextRow >= BOARD_SIZE || nextCol < 0 || nextCol >= BOARD_SIZE) { // Hit edge of board
                 break;
             }
-            if (newBoard[nextRow][nextCol].pieceId) {
+            if (newBoard[nextRow][nextCol].pieceId) { // Hit another piece
                 break;
             }
+            // Valid push, update current position
             currentPushRow = nextRow;
             currentPushCol = nextCol;
+            // The finalPos for the piece is the new currentPushRow/Col
             finalPos = {row: currentPushRow, col: currentPushCol};
         }
     }
 
-    newPieces[movedPieceId] = { ...pieceToUpdate, position: finalPos };
-    newBoard[finalPos.row][finalPos.col].pieceId = movedPieceId;
+    // Update piece position in pieces object and on the board
+    // If piece wasn't pushed by rift, clear old spot
     if (originalPos.row !== finalPos.row || originalPos.col !== finalPos.col) {
         newBoard[originalPos.row][originalPos.col].pieceId = null;
     }
+    newPieces[movedPieceId] = { ...pieceToUpdate, position: finalPos };
+    newBoard[finalPos.row][finalPos.col].pieceId = movedPieceId;
+
 
     return { board: newBoard, pieces: newPieces, finalPosition: finalPos, messageUpdate };
   }, [toast, gameState.playerTwoName, gameState.playerOneName]);
@@ -361,13 +390,15 @@ export default function SavannahChasePage() {
         }
 
         let moveMessage = "";
-        newBoard[selectedPiece.position.row][selectedPiece.position.col].pieceId = null;
+        // We don't clear the piece from the board here yet, processSpecialFieldEffects will handle it
+        // newBoard[selectedPiece.position.row][selectedPiece.position.col].pieceId = null;
 
         const targetSquareContentOriginalBoard = gameState.board[row][col];
         if (targetSquareContentOriginalBoard.pieceId) {
           const capturedPieceOriginal = gameState.pieces[targetSquareContentOriginalBoard.pieceId];
+          // Lion capture check: A Lion can only be captured by another Lion or a Giraffe.
           if (capturedPieceOriginal.animal === 'lion' && !(selectedPiece.animal === 'lion' || selectedPiece.animal === 'giraffe')) {
-             toast({ title: "Invalid Capture", description: `Your ${selectedPiece.animal} cannot capture a Lion. Only a Lion or Giraffe can.`, variant: "destructive" });
+             toast({ title: "Invalid Capture", description: `Your ${selectedPiece.animal} cannot capture a Lion. Only a Lion or Giraffe can.`, variant: "destructive", duration: 4000 });
              setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [] }));
              return;
           }
@@ -572,13 +603,15 @@ export default function SavannahChasePage() {
 
             if (targetSquare.pieceId) {
                 const targetPieceDetails = gameState.pieces[targetSquare.pieceId];
-                if (targetPieceDetails.player === 'ai') {
+                if (targetPieceDetails.player === 'ai') { // Cannot capture its own piece
                     isValidFinalMove = false;
-                } else {
+                } else { // Opponent piece
                     capturedPieceAnimal = targetPieceDetails.animal;
+                    // Check Lion capture rules (Lion can only be captured by Lion/Giraffe)
                     if (targetPieceDetails.animal === 'lion' && !(piece.animal === 'lion' || piece.animal === 'giraffe')) {
                         isValidFinalMove = false;
                     }
+                    // Check Gazelle capture rules (Gazelle cannot capture Lion)
                     if (piece.animal === 'gazelle' && targetPieceDetails.animal === 'lion') {
                         isValidFinalMove = false;
                     }
@@ -590,10 +623,11 @@ export default function SavannahChasePage() {
             }
           }
         }
-
+        
         let chosenMoveData = null;
         const captureMoves = allAiMoves.filter(m => m.isCapture);
         if (captureMoves.length > 0) {
+          // Prioritize capturing higher value pieces if multiple captures are available
           const lionCaptures = captureMoves.filter(m => m.capturedPieceAnimal === 'lion');
           const giraffeCaptures = captureMoves.filter(m => m.capturedPieceAnimal === 'giraffe');
           const gazelleCaptures = captureMoves.filter(m => m.capturedPieceAnimal === 'gazelle');
@@ -601,7 +635,7 @@ export default function SavannahChasePage() {
           if (lionCaptures.length > 0) chosenMoveData = lionCaptures[Math.floor(Math.random() * lionCaptures.length)];
           else if (giraffeCaptures.length > 0) chosenMoveData = giraffeCaptures[Math.floor(Math.random() * giraffeCaptures.length)];
           else if (gazelleCaptures.length > 0) chosenMoveData = gazelleCaptures[Math.floor(Math.random() * gazelleCaptures.length)];
-          else chosenMoveData = captureMoves[Math.floor(Math.random() * captureMoves.length)];
+          else chosenMoveData = captureMoves[Math.floor(Math.random() * captureMoves.length)]; // Should not happen if lists above are checked
         }
 
         if (!chosenMoveData && allAiMoves.length > 0) {
@@ -624,12 +658,13 @@ export default function SavannahChasePage() {
           }
 
           let moveMessage = "";
-          newBoard[aiSelectedPiece.position.row][aiSelectedPiece.position.col].pieceId = null;
+          // We don't clear the piece from the board here yet, processSpecialFieldEffects will handle it
+          // newBoard[aiSelectedPiece.position.row][aiSelectedPiece.position.col].pieceId = null;
 
           const targetSquareContentOriginalBoard = gameState.board[aiMoveToMake.row][aiMoveToMake.col];
           if (targetSquareContentOriginalBoard.pieceId) {
             const capturedPieceOriginal = gameState.pieces[targetSquareContentOriginalBoard.pieceId];
-            if (capturedPieceOriginal.player === 'human') {
+            if (capturedPieceOriginal.player === 'human') { // Ensure it's a human piece being captured
                 delete newPieces[targetSquareContentOriginalBoard.pieceId];
                 newAiPlayerCapturesHumanScore[capturedPieceOriginal.animal]++;
                 moveMessage = `${gameState.playerOneName} ${aiSelectedPiece.animal} captured ${gameState.playerTwoName} ${capturedPieceOriginal.animal}.`;
@@ -684,7 +719,7 @@ export default function SavannahChasePage() {
 
         } else { // AI has no valid moves
            let currentLionMovedLastTurn = gameState.lionMovedLastTurn;
-           if (gameState.lionMovedLastTurn === 'ai') {
+           if (gameState.lionMovedLastTurn === 'ai') { // If AI's lion was paused, clear it if AI passes turn
              currentLionMovedLastTurn = null;
            }
           setGameState(prev => ({
@@ -700,15 +735,21 @@ export default function SavannahChasePage() {
       performAiMove();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState.currentPlayer, gameState.isGameOver]);
+  }, [gameState.currentPlayer, gameState.isGameOver]); // Removed isLoadingAI from dependencies to prevent potential loops if AI state changes rapidly
 
   const handleResetGame = useCallback(() => {
-    setShowTutorial(true);
+    // setGameState(initializeGameState()); // This would reset immediately
+    setShowTutorial(true); // Show tutorial, which then leads to game start/reset
   }, []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
     if (gameState.isGameOver && !showTutorial) {
+      toast({
+        title: "Game Over!",
+        description: `${gameState.winner === 'human' ? gameState.playerTwoName : gameState.playerOneName} wins! Resetting in 3 seconds...`,
+        duration: 3000,
+      });
       timeoutId = setTimeout(() => {
         handleResetGame();
       }, 3000);
@@ -716,7 +757,7 @@ export default function SavannahChasePage() {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [gameState.isGameOver, handleResetGame, showTutorial]);
+  }, [gameState.isGameOver, gameState.winner, gameState.playerOneName, gameState.playerTwoName, handleResetGame, toast, showTutorial]);
 
   if (showTutorial) {
     return <Tutorial onStartGame={handleStartGame} />;

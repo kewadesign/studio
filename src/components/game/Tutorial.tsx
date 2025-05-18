@@ -24,7 +24,7 @@ const tutorialSteps = [
   {
     icon: <TrendingUp className="inline-block mr-2 text-blue-500" />,
     title: 'Die Giraffe (G)',
-    content: 'Die Giraffe zieht bis zu 2 Felder, aber nur geradeaus (nicht diagonal). Sie darf keine Hügel (H) und keine Sümpfe (S) betreten.',
+    content: 'Die Giraffe zieht bis zu 2 Felder, aber nur geradeaus (nicht diagonal). Sie darf keine Sümpfe (S) betreten.',
   },
   {
     icon: <Sparkles className="inline-block mr-2 text-green-500" />,
@@ -34,7 +34,7 @@ const tutorialSteps = [
   {
     icon: <Mountain className="inline-block mr-2 text-yellow-700" />,
     title: 'Spezialfeld: Hügel (H)',
-    content: 'Hügel (H) sind für Giraffen tabu! Andere Tiere können sie normal betreten.',
+    content: 'Hügel (H) können von allen Tieren betreten werden. Giraffen sind hier nicht eingeschränkt.',
   },
   {
     icon: <Waves className="inline-block mr-2 text-emerald-600" />,
