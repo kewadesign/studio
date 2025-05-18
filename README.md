@@ -1,5 +1,10 @@
-# Firebase Studio
+Savannah Chase,
 
-This is a NextJS starter in Firebase Studio.
+Prototype Spieltester
 
-To get started, take a look at src/app/page.tsx.
+
+
+Clone it and type "run npm dev" in console/terminal
+
+
+
