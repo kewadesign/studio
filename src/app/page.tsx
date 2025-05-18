@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import Tutorial from '@/components/game/Tutorial';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from "@/lib/utils";
 
 
 const initialPiecesSetup: Record<string, Omit<Piece, 'id'>> = {
@@ -407,15 +408,14 @@ export default function SavannahChasePage() {
           if (r < 0 || r >= BOARD_ROWS || c < 0 || c >= BOARD_COLS) break;
 
           const targetSquare = currentBoard[r][c];
-          if (targetSquare.terrain === 'swamp') continue;
-
+          if (targetSquare.terrain === 'swamp') continue; // Giraffe cannot enter swamp
 
           if (dist === 2) {
             const intermediateRow = startRow + dr;
             const intermediateCol = startCol + dc;
-            if (currentBoard[intermediateRow][intermediateCol].pieceId) break;
-            if (currentBoard[intermediateRow][intermediateCol].terrain === 'rift') continue;
-            if (currentBoard[intermediateRow][intermediateCol].terrain === 'swamp') continue;
+            if (currentBoard[intermediateRow][intermediateCol].pieceId) break; // Cannot jump over pieces
+            if (currentBoard[intermediateRow][intermediateCol].terrain === 'rift') continue; // Cannot jump over rift
+            if (currentBoard[intermediateRow][intermediateCol].terrain === 'swamp') continue; // Cannot jump over swamp
           }
 
           if (targetSquare.pieceId) {
@@ -1134,3 +1134,5 @@ export default function SavannahChasePage() {
   );
 }
 
+
+    
