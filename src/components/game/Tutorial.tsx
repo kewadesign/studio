@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Sparkles, Shield, TrendingUp, Mountain, Waves, Wind, SkipForward } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Shield, TrendingUp, Mountain, Waves, Wind, SkipForward, HelpCircle, ArrowUp } from 'lucide-react';
 
 interface TutorialProps {
   onStartGame: () => void;
@@ -82,16 +82,16 @@ const Tutorial: React.FC<TutorialProps> = ({ onStartGame }) => {
         <CardContent className="text-base sm:text-lg text-card-foreground">
           <p>{step.content}</p>
         </CardContent>
-        <CardFooter className="flex justify-between items-center pt-4">
-          <Button onClick={handlePrev} disabled={currentStep === 0} variant="outline" className="w-1/3">
+        <CardFooter className="flex justify-between items-center pt-4 gap-3">
+          <Button onClick={handlePrev} disabled={currentStep === 0} variant="outline">
             <ChevronLeft className="mr-1 h-5 w-5" /> Zurück
           </Button>
           {currentStep < tutorialSteps.length - 1 ? (
             <>
-              <Button onClick={onStartGame} variant="secondary" className="w-1/3">
+              <Button onClick={onStartGame} variant="secondary">
                 <SkipForward className="mr-1 h-5 w-5" /> Überspringen
               </Button>
-              <Button onClick={handleNext} className="w-1/3">
+              <Button onClick={handleNext}>
                 Weiter <ChevronRight className="ml-1 h-5 w-5" />
               </Button>
             </>
