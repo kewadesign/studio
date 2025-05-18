@@ -17,7 +17,6 @@ import Tutorial from '@/components/game/Tutorial';
 // Startaufstellung (0-indexed, Player One (AI, White) on rows 0/1, Player Two (Human, Black) on rows 6/5):
 // Player One (AI, White, 'ai'): G(0,2), L(0,3), G(0,4) | Z(1,1), Z(1,2), Z(1,3), Z(1,4), Z(1,5)
 // Player Two (Human, Black, 'human'): G(6,2), L(6,3), G(6,4) | Z(5,1), Z(5,2), Z(5,3), Z(5,4), Z(5,5)
-// Player 'ai' is White (Top), Player 'human' is Black (Bottom)
 
 const initialPieces: Record<string, Piece> = {
   // AI Pieces (Player One - White, Top) - Player 'ai'
@@ -55,13 +54,13 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
   Object.values(pieces).forEach(p => {
     occupiedByFixedTerrainOrPiece.add(`${p.position.row}-${p.position.col}`);
   });
-  
-  // Starting rows (0,1 for AI; 5,6 for Human) should not have random terrain
-  const restrictedRows = [0, 1, 5, 6];
+
+  // Restricted rows for random terrain (player start rows: 0,1 for AI; 5,6 for Human)
+  const restrictedRowsForRandomTerrain = [0, 1, 5, 6];
 
   const availableCellsForRandomTerrain: {row: number, col: number}[] = [];
   for (let r = 0; r < BOARD_SIZE; r++) {
-    if (restrictedRows.includes(r)) continue; // Skip restricted rows
+    if (restrictedRowsForRandomTerrain.includes(r)) continue;
     for (let c = 0; c < BOARD_SIZE; c++) {
       if (!occupiedByFixedTerrainOrPiece.has(`${r}-${c}`)) {
         availableCellsForRandomTerrain.push({row: r, col: c});
@@ -89,7 +88,7 @@ function createInitialBoard(pieces: Record<string, Piece>): Board {
         ];
         board[cell.row][cell.col].riftDirection = riftDirections[Math.floor(Math.random() * riftDirections.length)];
       }
-      occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`); // Mark as occupied for further placements
+      occupiedByFixedTerrainOrPiece.add(`${cell.row}-${cell.col}`);
     }
   };
 
@@ -188,12 +187,10 @@ export default function SavannahChasePage() {
     const piece = currentPieces[pieceId];
     if (!piece) return [];
 
-    // Check for Lion's natural pause
     if (piece.animal === 'lion' && lionPlayerCurrentlyPaused === piece.player) {
       return [];
     }
 
-    // Check for Swamp-induced pause for Lions and Gazelles
     if ((piece.animal === 'lion' || piece.animal === 'gazelle') &&
         swampPausedPieceInfo?.player === piece.player &&
         swampPausedPieceInfo?.pieceId === piece.id) {
@@ -213,59 +210,66 @@ export default function SavannahChasePage() {
           const r = startRow + dr * dist;
           const c = startCol + dc * dist;
 
-          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break; // Off board
+          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break; 
 
           const targetSquare = currentBoard[r][c];
-          // Lion can move to swamp, but will pause next turn (handled after move)
-          // Lion can move to hill.
+          if (targetSquare.terrain === 'hill') continue; // Lion cannot enter Hill
+
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
-            if (targetPiece.player !== piece.player) { // Can capture opponent's piece
-              // Check if Lion is allowed to capture targetPiece (Lion can only be captured by Lion/Giraffe)
+            if (targetPiece.player !== piece.player) { 
               if (targetPiece.animal === 'lion' && !(piece.animal === 'lion' || piece.animal === 'giraffe')) {
                  // This lion cannot capture the other lion
               } else {
                 moves.push({ row: r, col: c });
               }
             }
-            break; // Path blocked by a piece
+            break; 
           }
-          moves.push({ row: r, col: c }); // Empty square
+          moves.push({ row: r, col: c }); 
         }
       }
     } else if (piece.animal === 'giraffe') {
-      const directions = [[-1,0], [1,0], [0,-1], [0,1]]; // Horizontal/Vertical only
+      const directions = [[-1,0], [1,0], [0,-1], [0,1]]; 
       for (const [dr, dc] of directions) {
-        for (let dist = 1; dist <= 2; dist++) { // Max 2 squares
+        for (let dist = 1; dist <= 2; dist++) { 
           const r = startRow + dr * dist;
           const c = startCol + dc * dist;
 
-          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break; // Off board
+          if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break; 
 
           const targetSquare = currentBoard[r][c];
           if (targetSquare.terrain === 'swamp') continue; // Giraffe cannot enter Swamp
 
+          // Giraffe cannot jump over a rift for a 2-square move
+          if (dist === 2) {
+            const intermediateRow = startRow + dr;
+            const intermediateCol = startCol + dc;
+            if (currentBoard[intermediateRow][intermediateCol].terrain === 'rift') {
+              continue; // Cannot jump over rift
+            }
+          }
+          // Giraffes CAN enter Hills - no 'hill' terrain check here for Giraffes
+
           if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
-            if (targetPiece.player !== piece.player) { // Can capture opponent's piece
+            if (targetPiece.player !== piece.player) { 
               moves.push({ row: r, col: c });
             }
-            break; // Path blocked by a piece
+            break; 
           }
-          moves.push({ row: r, col: c }); // Empty square
+          moves.push({ row: r, col: c }); 
         }
       }
     } else if (piece.animal === 'gazelle') {
-      // Player 'human' (Black, Bottom) Gazelles move "forward" (decreasing row index)
-      // Player 'ai' (White, Top) Gazelles move "forward" (increasing row index)
-      const forwardDir = piece.player === 'human' ? -1 : 1;
+      const forwardDir = piece.player === 'human' ? -1 : 1; // Human (Black, Bottom) Gazelles move decreasing row index
 
       // Move 1 square forward
       const moveR = startRow + forwardDir;
       if (moveR >= 0 && moveR < BOARD_SIZE) {
-        // Gazelle can move to swamp, but will pause next turn (handled after move)
-        // Gazelle can move to hill.
-        if (!currentBoard[moveR][startCol].pieceId) {
+        if (currentBoard[moveR][startCol].terrain === 'hill') {
+          // Gazelle cannot enter Hill
+        } else if (!currentBoard[moveR][startCol].pieceId) {
           moves.push({ row: moveR, col: startCol });
         }
       }
@@ -276,11 +280,11 @@ export default function SavannahChasePage() {
         const captureR = startRow + forwardDir;
         if (captureC >= 0 && captureC < BOARD_SIZE && captureR >=0 && captureR < BOARD_SIZE) {
           const targetSquare = currentBoard[captureR][captureC];
-          // Gazelle can capture on swamp, but will pause next turn (handled after move)
-          // Gazelle can capture on hill.
-          if (targetSquare.pieceId) {
+          if (targetSquare.terrain === 'hill') {
+            // Gazelle cannot capture on Hill
+          } else if (targetSquare.pieceId) {
             const targetPiece = currentPieces[targetSquare.pieceId];
-            if (targetPiece.player !== piece.player && targetPiece.animal !== 'lion') { // Gazelle cannot capture Lion
+            if (targetPiece.player !== piece.player && targetPiece.animal !== 'lion') { 
               moves.push({ row: captureR, col: captureC });
             }
           }
@@ -306,9 +310,6 @@ export default function SavannahChasePage() {
 
     const originalPos = currentPieces[movedPieceId].position;
 
-    // Update piece's internal position first, before rift check
-    // newBoard[originalPos.row][originalPos.col].pieceId = null; // Clear old spot on board
-
     const landedSquare = newBoard[finalPos.row][finalPos.col];
 
     if (landedSquare.terrain === 'rift' && landedSquare.riftDirection) {
@@ -321,34 +322,27 @@ export default function SavannahChasePage() {
         let currentPushRow = finalPos.row;
         let currentPushCol = finalPos.col;
         
-        // The piece is initially on the rift square, so we must clear it from the original board spot
-        // IF the rift is not the original spot (i.e., the piece didn't start on the rift)
         if (originalPos.row !== finalPos.row || originalPos.col !== finalPos.col) {
             newBoard[originalPos.row][originalPos.col].pieceId = null;
         }
-
 
         // eslint-disable-next-line no-constant-condition
         while(true) {
             const nextRow = currentPushRow + pushDirection.dRow;
             const nextCol = currentPushCol + pushDirection.dCol;
 
-            if (nextRow < 0 || nextRow >= BOARD_SIZE || nextCol < 0 || nextCol >= BOARD_SIZE) { // Hit edge of board
+            if (nextRow < 0 || nextRow >= BOARD_SIZE || nextCol < 0 || nextCol >= BOARD_SIZE) { 
                 break;
             }
-            if (newBoard[nextRow][nextCol].pieceId) { // Hit another piece
+            if (newBoard[nextRow][nextCol].pieceId) { 
                 break;
             }
-            // Valid push, update current position
             currentPushRow = nextRow;
             currentPushCol = nextCol;
-            // The finalPos for the piece is the new currentPushRow/Col
             finalPos = {row: currentPushRow, col: currentPushCol};
         }
     }
 
-    // Update piece position in pieces object and on the board
-    // If piece wasn't pushed by rift, clear old spot
     if (originalPos.row !== finalPos.row || originalPos.col !== finalPos.col) {
         newBoard[originalPos.row][originalPos.col].pieceId = null;
     }
@@ -367,8 +361,6 @@ export default function SavannahChasePage() {
     const pieceInClickedSquare = clickedSquare.pieceId ? gameState.pieces[clickedSquare.pieceId] : null;
 
     let newSwampSkipTurnForPiece = gameState.swampSkipTurnForPiece;
-    // If human player is making a move, and one of their pieces was due to be swamp-paused, clear that pause now as their turn begins.
-    // The calculateValidMoves will handle preventing the specific piece from moving if it's its turn to be skipped.
     if (newSwampSkipTurnForPiece?.player === 'human') {
         newSwampSkipTurnForPiece = null;
     }
@@ -385,18 +377,15 @@ export default function SavannahChasePage() {
         let currentLionMovedLastTurn = gameState.lionMovedLastTurn;
         if (selectedPiece.animal === 'lion') {
             currentLionMovedLastTurn = selectedPiece.player; // 'human'
-        } else if (gameState.lionMovedLastTurn === 'human') { // If human moved a non-lion, their lion is no longer paused from its own move
+        } else if (gameState.lionMovedLastTurn === 'human') { 
             currentLionMovedLastTurn = null;
         }
 
         let moveMessage = "";
-        // We don't clear the piece from the board here yet, processSpecialFieldEffects will handle it
-        // newBoard[selectedPiece.position.row][selectedPiece.position.col].pieceId = null;
 
         const targetSquareContentOriginalBoard = gameState.board[row][col];
         if (targetSquareContentOriginalBoard.pieceId) {
           const capturedPieceOriginal = gameState.pieces[targetSquareContentOriginalBoard.pieceId];
-          // Lion capture check: A Lion can only be captured by another Lion or a Giraffe.
           if (capturedPieceOriginal.animal === 'lion' && !(selectedPiece.animal === 'lion' || selectedPiece.animal === 'giraffe')) {
              toast({ title: "Invalid Capture", description: `Your ${selectedPiece.animal} cannot capture a Lion. Only a Lion or Giraffe can.`, variant: "destructive", duration: 4000 });
              setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [] }));
@@ -414,7 +403,7 @@ export default function SavannahChasePage() {
 
         const finalLandedSquare = newBoard[newPieces[selectedPiece.id].position.row][newPieces[selectedPiece.id].position.col];
         if ((selectedPiece.animal === 'lion' || selectedPiece.animal === 'gazelle') && finalLandedSquare.terrain === 'swamp') {
-            newSwampSkipTurnForPiece = { pieceId: selectedPiece.id, player: 'human' }; // This piece will be paused next human turn
+            newSwampSkipTurnForPiece = { pieceId: selectedPiece.id, player: 'human' }; 
             const swampMessage = `${gameState.playerTwoName} ${selectedPiece.animal} landed on a Swamp! Will pause its next move.`;
             if (!moveMessage) moveMessage = swampMessage; else moveMessage += ` ${swampMessage}`;
             toast({ title: "Swamp!", description: swampMessage, duration: 3000 });
@@ -456,12 +445,11 @@ export default function SavannahChasePage() {
           swampSkipTurnForPiece: newSwampSkipTurnForPiece,
         }));
 
-      } else { // Clicked on a non-valid-move square OR trying to re-select/de-select
-        if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { // If it's another of human's pieces
-            if (pieceInClickedSquare.id === gameState.selectedPieceId) { // Clicked selected piece again (de-select)
+      } else { 
+        if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { 
+            if (pieceInClickedSquare.id === gameState.selectedPieceId) { 
                  setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [], message: `${gameState.playerTwoName}'s turn (Black). Select a piece.` }));
-            } else { // Selected a different human piece
-                // When selecting a new piece, use the potentially cleared newSwampSkipTurnForPiece for calculating its moves
+            } else { 
                 const pieceMoves = calculateValidMoves(pieceInClickedSquare.id, gameState.board, gameState.pieces, gameState.lionMovedLastTurn, newSwampSkipTurnForPiece);
                 let messageForSelection = `Selected ${pieceInClickedSquare.animal}. Choose a destination.`;
 
@@ -469,7 +457,7 @@ export default function SavannahChasePage() {
                     toast({ title: "Lion Paused", description: "Your Lion must rest this turn." });
                     messageForSelection = "Lion is paused. Select another piece.";
                 } else if ((pieceInClickedSquare.animal === 'lion' || pieceInClickedSquare.animal === 'gazelle') &&
-                           gameState.swampSkipTurnForPiece?.pieceId === pieceInClickedSquare.id && // Check original swampSkip before it's cleared
+                           gameState.swampSkipTurnForPiece?.pieceId === pieceInClickedSquare.id && 
                            gameState.swampSkipTurnForPiece?.player === 'human') {
                     toast({ title: "Swamp Pause", description: `This ${pieceInClickedSquare.animal} is paused by the swamp this turn.`});
                     messageForSelection = `This ${pieceInClickedSquare.animal} is swamp-paused. Select another piece.`;
@@ -482,15 +470,13 @@ export default function SavannahChasePage() {
                     selectedPieceId: pieceInClickedSquare.id,
                     validMoves: pieceMoves,
                     message: messageForSelection,
-                    // swampSkipTurnForPiece is NOT changed here, it's cleared when a move is MADE or turn starts
                 }));
             }
-        } else { // Clicked an empty square or AI piece (and not a valid move target)
+        } else { 
           setGameState(prev => ({ ...prev, selectedPieceId: null, validMoves: [], message: `Invalid move. ${gameState.playerTwoName}'s turn (Black). Select a piece.`}));
         }
       }
-    } else if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { // No piece selected yet, and clicked a human piece
-        // When selecting a piece for the first time in a turn, use newSwampSkipTurnForPiece
+    } else if (pieceInClickedSquare && pieceInClickedSquare.player === 'human') { 
         const pieceMoves = calculateValidMoves(pieceInClickedSquare.id, gameState.board, gameState.pieces, gameState.lionMovedLastTurn, newSwampSkipTurnForPiece);
         let messageForSelection = `Selected ${pieceInClickedSquare.animal}. Highlighting valid moves.`;
 
@@ -498,7 +484,7 @@ export default function SavannahChasePage() {
              toast({ title: "Lion Paused", description: "Your Lion must rest this turn." });
              messageForSelection = "Lion is paused. Select another piece.";
         } else if ((pieceInClickedSquare.animal === 'lion' || pieceInClickedSquare.animal === 'gazelle') &&
-                   newSwampSkipTurnForPiece?.pieceId === pieceInClickedSquare.id && // Check against current (potentially cleared) swamp state
+                   newSwampSkipTurnForPiece?.pieceId === pieceInClickedSquare.id && 
                    newSwampSkipTurnForPiece?.player === 'human') {
              toast({ title: "Swamp Pause", description: `This ${pieceInClickedSquare.animal} is paused by the swamp this turn.`});
              messageForSelection = `This ${pieceInClickedSquare.animal} is swamp-paused. Select another piece.`;
@@ -511,9 +497,9 @@ export default function SavannahChasePage() {
             selectedPieceId: pieceInClickedSquare.id,
             validMoves: pieceMoves,
             message: messageForSelection,
-            swampSkipTurnForPiece: newSwampSkipTurnForPiece, // Persist the (potentially cleared) swamp state
+            swampSkipTurnForPiece: newSwampSkipTurnForPiece, 
          }));
-    } else { // Clicked an empty square or AI piece with no selection
+    } else { 
         setGameState(prev => ({ ...prev, message: `${gameState.playerTwoName}'s turn (Black). Select one of your pieces.`, swampSkipTurnForPiece: newSwampSkipTurnForPiece }));
     }
   }, [gameState, calculateValidMoves, checkWinCondition, toast, processSpecialFieldEffects, isLoadingAI]);
@@ -582,7 +568,6 @@ export default function SavannahChasePage() {
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         let currentSwampSkipTurnForPieceAi = gameState.swampSkipTurnForPiece;
-        // If AI player is making a move, and one of their pieces was due to be swamp-paused, clear that pause now.
         if (currentSwampSkipTurnForPieceAi?.player === 'ai') {
             currentSwampSkipTurnForPieceAi = null;
         }
@@ -592,7 +577,6 @@ export default function SavannahChasePage() {
 
         for (const pieceId of aiPieceIds) {
           const piece = gameState.pieces[pieceId];
-          // AI uses the (potentially cleared) currentSwampSkipTurnForPieceAi for calculating its moves
           const validMovesForPiece = calculateValidMoves(pieceId, gameState.board, gameState.pieces, gameState.lionMovedLastTurn, currentSwampSkipTurnForPieceAi);
 
           for (const move of validMovesForPiece) {
@@ -603,15 +587,13 @@ export default function SavannahChasePage() {
 
             if (targetSquare.pieceId) {
                 const targetPieceDetails = gameState.pieces[targetSquare.pieceId];
-                if (targetPieceDetails.player === 'ai') { // Cannot capture its own piece
+                if (targetPieceDetails.player === 'ai') { 
                     isValidFinalMove = false;
-                } else { // Opponent piece
+                } else { 
                     capturedPieceAnimal = targetPieceDetails.animal;
-                    // Check Lion capture rules (Lion can only be captured by Lion/Giraffe)
                     if (targetPieceDetails.animal === 'lion' && !(piece.animal === 'lion' || piece.animal === 'giraffe')) {
                         isValidFinalMove = false;
                     }
-                    // Check Gazelle capture rules (Gazelle cannot capture Lion)
                     if (piece.animal === 'gazelle' && targetPieceDetails.animal === 'lion') {
                         isValidFinalMove = false;
                     }
@@ -627,7 +609,6 @@ export default function SavannahChasePage() {
         let chosenMoveData = null;
         const captureMoves = allAiMoves.filter(m => m.isCapture);
         if (captureMoves.length > 0) {
-          // Prioritize capturing higher value pieces if multiple captures are available
           const lionCaptures = captureMoves.filter(m => m.capturedPieceAnimal === 'lion');
           const giraffeCaptures = captureMoves.filter(m => m.capturedPieceAnimal === 'giraffe');
           const gazelleCaptures = captureMoves.filter(m => m.capturedPieceAnimal === 'gazelle');
@@ -635,11 +616,17 @@ export default function SavannahChasePage() {
           if (lionCaptures.length > 0) chosenMoveData = lionCaptures[Math.floor(Math.random() * lionCaptures.length)];
           else if (giraffeCaptures.length > 0) chosenMoveData = giraffeCaptures[Math.floor(Math.random() * giraffeCaptures.length)];
           else if (gazelleCaptures.length > 0) chosenMoveData = gazelleCaptures[Math.floor(Math.random() * gazelleCaptures.length)];
-          else chosenMoveData = captureMoves[Math.floor(Math.random() * captureMoves.length)]; // Should not happen if lists above are checked
+          else chosenMoveData = captureMoves[Math.floor(Math.random() * captureMoves.length)];
         }
 
         if (!chosenMoveData && allAiMoves.length > 0) {
-          chosenMoveData = allAiMoves[Math.floor(Math.random() * allAiMoves.length)];
+          // Prefer non-Kluft moves if possible, if no capture is available
+          const nonKluftMoves = allAiMoves.filter(m => gameState.board[m.move.row][m.move.col].terrain !== 'rift');
+          if (nonKluftMoves.length > 0) {
+            chosenMoveData = nonKluftMoves[Math.floor(Math.random() * nonKluftMoves.length)];
+          } else {
+            chosenMoveData = allAiMoves[Math.floor(Math.random() * allAiMoves.length)];
+          }
         }
 
 
@@ -653,18 +640,16 @@ export default function SavannahChasePage() {
           let currentLionMovedLastTurn = gameState.lionMovedLastTurn;
           if (aiSelectedPiece.animal === 'lion') {
               currentLionMovedLastTurn = 'ai';
-          } else if (gameState.lionMovedLastTurn === 'ai') { // If AI moved a non-lion, its lion is no longer paused
+          } else if (gameState.lionMovedLastTurn === 'ai') { 
              currentLionMovedLastTurn = null;
           }
 
           let moveMessage = "";
-          // We don't clear the piece from the board here yet, processSpecialFieldEffects will handle it
-          // newBoard[aiSelectedPiece.position.row][aiSelectedPiece.position.col].pieceId = null;
 
           const targetSquareContentOriginalBoard = gameState.board[aiMoveToMake.row][aiMoveToMake.col];
           if (targetSquareContentOriginalBoard.pieceId) {
             const capturedPieceOriginal = gameState.pieces[targetSquareContentOriginalBoard.pieceId];
-            if (capturedPieceOriginal.player === 'human') { // Ensure it's a human piece being captured
+            if (capturedPieceOriginal.player === 'human') { 
                 delete newPieces[targetSquareContentOriginalBoard.pieceId];
                 newAiPlayerCapturesHumanScore[capturedPieceOriginal.animal]++;
                 moveMessage = `${gameState.playerOneName} ${aiSelectedPiece.animal} captured ${gameState.playerTwoName} ${capturedPieceOriginal.animal}.`;
@@ -678,7 +663,7 @@ export default function SavannahChasePage() {
 
           const finalLandedSquare = newBoard[newPieces[aiSelectedPiece.id].position.row][newPieces[aiSelectedPiece.id].position.col];
           if ((aiSelectedPiece.animal === 'lion' || aiSelectedPiece.animal === 'gazelle') && finalLandedSquare.terrain === 'swamp') {
-              currentSwampSkipTurnForPieceAi = { pieceId: aiSelectedPiece.id, player: 'ai' }; // This AI piece will be paused next AI turn
+              currentSwampSkipTurnForPieceAi = { pieceId: aiSelectedPiece.id, player: 'ai' }; 
               const swampMessage = `${gameState.playerOneName} ${aiSelectedPiece.animal} landed on a Swamp! Will pause its next move.`;
               if (!moveMessage) moveMessage = swampMessage; else moveMessage += ` ${swampMessage}`;
               toast({ title: "Swamp!", description: swampMessage, duration: 3000 });
@@ -717,9 +702,9 @@ export default function SavannahChasePage() {
             swampSkipTurnForPiece: currentSwampSkipTurnForPieceAi,
           }));
 
-        } else { // AI has no valid moves
+        } else { 
            let currentLionMovedLastTurn = gameState.lionMovedLastTurn;
-           if (gameState.lionMovedLastTurn === 'ai') { // If AI's lion was paused, clear it if AI passes turn
+           if (gameState.lionMovedLastTurn === 'ai') { 
              currentLionMovedLastTurn = null;
            }
           setGameState(prev => ({
@@ -727,7 +712,7 @@ export default function SavannahChasePage() {
             currentPlayer: 'human',
             message: `${gameState.playerOneName} (AI) has no valid moves. ${gameState.playerTwoName}'s turn (Black).`,
             lionMovedLastTurn: currentLionMovedLastTurn,
-            swampSkipTurnForPiece: currentSwampSkipTurnForPieceAi, // Persist the (potentially cleared) swamp state for AI
+            swampSkipTurnForPiece: currentSwampSkipTurnForPieceAi, 
           }));
         }
         setIsLoadingAI(false);
@@ -735,11 +720,10 @@ export default function SavannahChasePage() {
       performAiMove();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState.currentPlayer, gameState.isGameOver]); // Removed isLoadingAI from dependencies to prevent potential loops if AI state changes rapidly
+  }, [gameState.currentPlayer, gameState.isGameOver]); 
 
   const handleResetGame = useCallback(() => {
-    // setGameState(initializeGameState()); // This would reset immediately
-    setShowTutorial(true); // Show tutorial, which then leads to game start/reset
+    setShowTutorial(true); 
   }, []);
 
   useEffect(() => {

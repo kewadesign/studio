@@ -24,17 +24,17 @@ const tutorialSteps = [
   {
     icon: <TrendingUp className="inline-block mr-2 text-blue-500" />,
     title: 'Die Giraffe (G)',
-    content: 'Die Giraffe zieht bis zu 2 Felder, aber nur geradeaus (nicht diagonal). Sie darf keine Sümpfe (S) betreten.',
+    content: 'Die Giraffe zieht bis zu 2 Felder, aber nur geradeaus (nicht diagonal). Sie darf keine Sümpfe (S) betreten und kann Klüfte nicht einfach überspringen. Nur Giraffen dürfen Hügel (H) betreten!',
   },
   {
     icon: <Sparkles className="inline-block mr-2 text-green-500" />,
     title: 'Die Gazelle (Z)',
-    content: 'Die Gazelle zieht 1 Feld gerade vorwärts. Zum Schlagen springt sie 1 Feld diagonal vorwärts. Gazellen können keine Löwen fangen!',
+    content: 'Die Gazelle zieht 1 Feld gerade vorwärts. Zum Schlagen springt sie 1 Feld diagonal vorwärts. Gazellen können keine Löwen fangen und keine Hügel betreten!',
   },
   {
     icon: <Mountain className="inline-block mr-2 text-yellow-700" />,
     title: 'Spezialfeld: Hügel (H)',
-    content: 'Hügel (H) können von allen Tieren betreten werden. Giraffen sind hier nicht eingeschränkt.',
+    content: 'Hügel (H) können NUR von Giraffen betreten werden. Für andere Figuren sind sie blockiert.',
   },
   {
     icon: <Waves className="inline-block mr-2 text-emerald-600" />,
@@ -44,7 +44,7 @@ const tutorialSteps = [
   {
     icon: <Wind className="inline-block mr-2 text-destructive" />,
     title: 'Spezialfeld: Kluft (K)',
-    content: 'Klüfte (K) sind knifflig! Landest du auf einer, wirst du in Pfeilrichtung weitergeschoben, bis du auf ein Hindernis triffst.',
+    content: 'Klüfte (K) sind knifflig! Landest du auf einer, wirst du in Pfeilrichtung weitergeschoben, bis du auf ein Hindernis triffst. Giraffen können sie nicht einfach überspringen.',
   },
   {
     icon: <Sparkles className="inline-block mr-2" />,
