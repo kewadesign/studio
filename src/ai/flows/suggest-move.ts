@@ -18,12 +18,12 @@ const SuggestMoveInputSchema = z.object({
     .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Schwarz), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. WZ für Spieler (Weiß) Gazelle, BL für KI (Schwarz) Löwe, BG für KI (Schwarz) Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
   playerTurn: z
     .string()
-    .describe('Der Name des Spielers, der am Zug ist (z.B. Spieler (Weiß, Unten), KI-Gegner (Schwarz, Oben)). Gib an, ob der Löwe oder eine andere Figur pausiert (z.B. durch Sumpf).'),
+    .describe('Der Name des Spielers, der am Zug ist (z.B. Spieler (Weiß, Unten), KI-Gegner (Schwarz, Oben)). Gib an, ob der Löwe oder eine andere Figur pausiert (z.B. durch Sumpf oder eigenen Löwenzug).'),
 });
 export type SuggestMoveInput = z.infer<typeof SuggestMoveInputSchema>;
 
 const SuggestMoveOutputSchema = z.object({
-  suggestedMove: z.string().describe("Eine textuelle Beschreibung des vorgeschlagenen Zuges, z.B. 'Bewege Gazelle von (1,1) nach (2,1)' oder 'Bewege Löwe von (0,3) nach (3,3) um Giraffe zu schlagen'. Wenn eine Figur pausiert, dies angeben."),
+  suggestedMove: z.string().describe("Eine textuelle Beschreibung des vorgeschlagenen Zuges, z.B. 'Bewege Gazelle von B6 nach B5' oder 'Bewege Löwe von D1 nach D4 um Giraffe zu schlagen'. Wenn eine Figur pausiert, dies angeben. Wenn keine guten Züge möglich sind oder alle Figuren blockiert sind, dies ebenfalls erklären."),
 });
 export type SuggestMoveOutput = z.infer<typeof SuggestMoveOutputSchema>;
 
@@ -32,15 +32,15 @@ export async function suggestMove(input: SuggestMoveInput): Promise<SuggestMoveO
 }
 
 const prompt = ai.definePrompt({
-  name: 'suggestMovePrompt_v0_4_randomRiftsAndSwampRules_DE',
+  name: 'suggestMovePrompt_v0_4_randomRiftsAndSwampRules_DE_v2',
   input: {schema: SuggestMoveInputSchema},
   output: {schema: SuggestMoveOutputSchema},
   prompt: `Du bist eine strategische Spiel-KI für "Savannah Chase" (Version 0.4 GDD mit zufälligen Klüften und neuen Sumpf-/Hügel-Regeln).
-Das Brett ist ein 7x7 Gitter. KI-Spieler (B, Schwarz) Figuren starten auf Reihe 0/1 und Mensch-Spieler (W, Weiß) Figuren starten auf Reihe 6/5.
+Das Brett ist ein 7x7 Gitter. KI-Spieler (B, Schwarz) Figuren starten auf Reihe 0/1 und Spieler (W, Weiß) Figuren starten auf Reihe 6/5.
 Figuren:
 - Löwe (L): Zieht 1-2 Felder (orthogonal/diagonal). Kann nicht springen. Muss 1 Zug nach Bewegung pausieren. Nur von gegn. Löwe oder Giraffe schlagbar. Wenn er auf Sumpf (S) landet, muss er nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (orthogonal). Kann nicht springen. Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
-- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Mensch (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diagonal vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
+- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diagonal vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 
 Spieler: Spieler (W, Weiß, Unten), KI (B, Schwarz, Oben). Figurennotation: SpielerinitialTiercharakter (z.B. WZ, BL, BG).
 '..' bezeichnet ein leeres Feld.
@@ -62,15 +62,15 @@ Berücksichtige, ob Figuren von {{{playerTurn}}} pausieren (Löwe wegen eigenem 
 Analysiere das Brett und schlage den bestmöglichen Zug für {{{playerTurn}}} vor.
 Der vorgeschlagene Zug sollte in einem klaren, handlungsorientierten Format beschrieben werden, mit Angabe der Figur, ihrer Start- und Endkoordinaten (Format: SpaltenbuchstabeZeilennummer, z.B. A1, G7). Beispiel: "Bewege Gazelle von B6 nach B5" oder "Bewege Löwe von D1 nach D4 um Giraffe zu schlagen".
 Wenn eine Schlüsselfigur pausiert, erwähne dies, z.B. "Löwe bei C3 ist pausiert. Schlage vor, Gazelle von B6 nach B5 zu bewegen."
-Wenn für {{{playerTurn}}} keine gültigen Züge möglich sind, gib das klar an.
+Wenn für {{{playerTurn}}} keine sinnvollen Züge möglich sind (z.B. alle Figuren blockiert oder nur Züge, die in direkten Nachteil führen), gib das klar an und erkläre kurz warum, z.B. "Keine guten Züge verfügbar, da alle Figuren blockiert sind. Versuche, eine Figur zu befreien."
 
 Priorisiere Züge in dieser Reihenfolge:
 1. Ein Zug, der das Spiel gewinnt (gegnerischen Löwen oder letzte gegnerische Gazelle schlägt).
 2. Ein Zug, der eine hochwertige Figur (Löwe > Giraffe > Gazelle) sicher schlägt.
 3. Ein Zug, der einen sofortigen Gewinnzug des Gegners blockiert.
-4. Ein Zug, der eine starke offensive oder defensive Position aufbaut, unter Berücksichtigung des Terrains. Landung auf einer Kluft (K) kann riskant oder vorteilhaft sein. Vermeide es, Löwen/Gazellen auf Sumpf (S) zu bewegen, wenn andere gute Züge existieren, wegen der Pause. Giraffen können Hügel (H) strategisch nutzen, da andere Figuren dies nicht können.
-5. Ein Zug, der eine Figur in einen nützlichen Bereich entwickelt oder eine weniger wertvolle Figur schlägt.
-6. Jeder andere gültige Zug. Vermeide es, in offensichtliche Gefahr zu ziehen, wenn bessere Optionen bestehen.
+4. Ein Zug, der eine starke offensive oder defensive Position aufbaut, unter Berücksichtigung des Terrains und der Vermeidung von Selbstblockaden. Landung auf einer Kluft (K) kann riskant oder vorteilhaft sein – wäge ab. Vermeide es, Löwen/Gazellen auf Sumpf (S) zu bewegen, wenn andere gute Züge existieren (Pause!). Giraffen können Hügel (H) strategisch nutzen.
+5. Ein Zug, der eine Figur entwickelt, die Bewegungsfreiheit erhöht oder eine weniger wertvolle Figur schlägt, ohne sich selbst in große Gefahr zu begeben oder zu blockieren.
+6. Jeder andere gültige Zug. Vermeide es, in offensichtliche Gefahr zu ziehen oder Figuren ohne Notwendigkeit zu blockieren.
 Wenn eine Figur pausiert, schlage nicht vor, sie zu bewegen.
 
 Antworte auf Deutsch und liefere nur den vorgeschlagenen Zugtext.
@@ -79,7 +79,7 @@ Antworte auf Deutsch und liefere nur den vorgeschlagenen Zugtext.
 
 const suggestMoveFlow = ai.defineFlow(
   {
-    name: 'suggestMoveFlow_v0_4_randomRiftsAndSwampRules_DE',
+    name: 'suggestMoveFlow_v0_4_randomRiftsAndSwampRules_DE_v2',
     inputSchema: SuggestMoveInputSchema,
     outputSchema: SuggestMoveOutputSchema,
   },

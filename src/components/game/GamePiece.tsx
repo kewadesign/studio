@@ -16,16 +16,16 @@ const GamePiece: React.FC<GamePieceProps> = ({ piece, isSelected, displayChar })
   let pieceSpecificClasses = '';
   let textSpecificClasses = '';
 
-  if (piece.player === 'human') { // Player's pieces (lighter)
-    pieceSpecificClasses = 'bg-[radial-gradient(ellipse_at_center,_hsl(var(--card))_40%,_hsl(var(--primary))_100%)]'; // Light tan/beige to muted gold
+  if (piece.player === 'human') { // Player's pieces (Weiß, unten) - heller
+    pieceSpecificClasses = 'bg-amber-400'; // Helleres Orange
     textSpecificClasses = 'text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.6)]';
-  } else { // AI's pieces (darker)
-    pieceSpecificClasses = 'bg-[radial-gradient(ellipse_at_center,_hsl(var(--muted))_40%,_hsl(var(--foreground))_100%)]'; // Muted tan/gray to dark brown
+  } else { // AI's pieces (Schwarz, oben) - dunkler
+    pieceSpecificClasses = 'bg-orange-600'; // Dunkleres Orange
     textSpecificClasses = 'text-black drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]';
   }
 
   const selectionClasses = isSelected
-    ? 'ring-4 ring-offset-background ring-yellow-400 scale-110 shadow-xl'
+    ? 'ring-4 ring-offset-background ring-yellow-500 scale-110 shadow-xl' // Gelb-orangener Ring
     : 'hover:shadow-xl';
 
   return (
