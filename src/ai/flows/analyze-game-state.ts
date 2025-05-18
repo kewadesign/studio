@@ -15,22 +15,22 @@ import {z}from 'genkit';
 const AnalyzeGameStateInputSchema = z.object({
   boardState: z
     .string()
-    .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Weiß), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. BZ für Menschliche Gazelle, WL für KI Löwe, WG für KI Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
-  playerOneName: z.string().describe('Der Name von Spieler Eins (KI, Weiß, Oben).'),
-  playerTwoName: z.string().describe('Der Name von Spieler Zwei (Mensch, Schwarz, Unten).'),
+    .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Schwarz), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. WZ für Spieler (Weiß) Gazelle, BL für KI (Schwarz) Löwe, BG für KI (Schwarz) Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
+  playerOneName: z.string().describe('Der Name von Spieler Eins (KI, Schwarz, Oben).'),
+  playerTwoName: z.string().describe('Der Name von Spieler Zwei (Menschlicher Spieler, Weiß, Unten).'),
 });
 export type AnalyzeGameStateInput = z.infer<typeof AnalyzeGameStateInputSchema>;
 
 const AnalyzeGameStateOutputSchema = z.object({
-  playerOneSummary: z // AI Player (White, Top)
+  playerOneSummary: z // AI Player (Black, Top)
     .string()
-    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Eins (KI, Weiß, Oben). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen und Fortschritt zu den Siegbedingungen.'),
-  playerTwoSummary: z // Human Player (Black, Bottom)
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Eins (KI, Schwarz, Oben). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen und Fortschritt zu den Siegbedingungen.'),
+  playerTwoSummary: z // Human Player (White, Bottom)
     .string()
-    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Zwei (Mensch, Schwarz, Unten). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen und Fortschritt zu den Siegbedingungen.'),
+    .describe('Eine kurze Zusammenfassung der Vor-/Nachteile für Spieler Zwei (Menschlicher Spieler, Weiß, Unten). Fokus auf Brettkontrolle, Figurensicherheit, Bedrohungen und Fortschritt zu den Siegbedingungen.'),
   overallAssessment: z
     .string()
-    .describe("Eine kurze Gesamtbewertung des Spielzustands, z.B. 'KI (Weiß) hat einen leichten Vorteil durch bessere Löwenpositionierung.'"),
+    .describe("Eine kurze Gesamtbewertung des Spielzustands, z.B. 'KI (Schwarz) hat einen leichten Vorteil durch bessere Löwenpositionierung.'"),
 });
 export type AnalyzeGameStateOutput = z.infer<typeof AnalyzeGameStateOutputSchema>;
 
@@ -45,22 +45,22 @@ const prompt = ai.definePrompt({
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
   prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und neuen Sumpf-/Hügel-Regeln).
-Das Brett ist 7x7 groß. KI (W, Weiß) startet in den Reihen 0/1. Mensch (B, Schwarz) startet in den Reihen 6/5.
+Das Brett ist 7x7 groß. KI (B, Schwarz) startet in den Reihen 0/1. Mensch (W, Weiß) startet in den Reihen 6/5.
 Figuren:
 - Löwe (L): Zieht 1-2 Felder (jede Richtung). Pausiert 1 Zug nach Bewegung. Nur von Löwe/Giraffe schlagbar. Wenn er auf Sumpf (S) landet, pausiert er nächste Runde. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
-- Gazelle (Z): KI (Weiß, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Mensch (Schwarz, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diag. vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
+- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Mensch (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diag. vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
 Terrain:
 'K' (Kluft): Landet eine Figur hier, wird sie in eine spezifische, zufällig bestimmte Richtung (N, S, E oder W) geschoben, bis sie auf ein Hindernis trifft. Schlägt nicht.
 'S' (Sumpf): Landen Löwe oder Gazelle hier, müssen sie nächste Runde pausieren. Giraffen können Sumpf nicht betreten.
 'H' (Hügel): NUR Giraffen können dieses Terrain betreten. Löwen und Gazellen nicht.
 Sieg: Gegnerischen Löwen ODER alle 5 gegn. Gazellen schlagen.
 
-Spielbrett (0-indizierte Reihen von KI Weiß oben, 0-indizierte Spalten von links):
+Spielbrett (0-indizierte Reihen von KI Schwarz oben, 0-indizierte Spalten von links):
 {{{boardState}}}
 
-Spieler Eins: {{{playerOneName}}} (KI, Weiß, Oben)
-Spieler Zwei: {{{playerTwoName}}} (Mensch, Schwarz, Unten)
+Spieler Eins: {{{playerOneName}}} (KI, Schwarz, Oben)
+Spieler Zwei: {{{playerTwoName}}} (Menschlicher Spieler, Weiß, Unten)
 
 Analysiere den Spielzustand. Liefere:
 1. Eine Zusammenfassung für {{{playerOneName}}} (Vor-/Nachteile, Figurensicherheit, Bedrohungen, Fortschritt zum Sieg).

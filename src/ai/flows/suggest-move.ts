@@ -15,10 +15,10 @@ import {z}from 'genkit';
 const SuggestMoveInputSchema = z.object({
   boardState: z
     .string()
-    .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Weiß), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. BZ für Menschliche Gazelle, WL für KI Löwe, WG für KI Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
+    .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Schwarz), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. WZ für Spieler (Weiß) Gazelle, BL für KI (Schwarz) Löwe, BG für KI (Schwarz) Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
   playerTurn: z
     .string()
-    .describe('Der Name des Spielers, der am Zug ist (z.B. Menschlicher Spieler (Schwarz, Unten), KI-Gegner (Weiß, Oben)). Gib an, ob der Löwe oder eine andere Figur pausiert (z.B. durch Sumpf).'),
+    .describe('Der Name des Spielers, der am Zug ist (z.B. Spieler (Weiß, Unten), KI-Gegner (Schwarz, Oben)). Gib an, ob der Löwe oder eine andere Figur pausiert (z.B. durch Sumpf).'),
 });
 export type SuggestMoveInput = z.infer<typeof SuggestMoveInputSchema>;
 
@@ -36,13 +36,13 @@ const prompt = ai.definePrompt({
   input: {schema: SuggestMoveInputSchema},
   output: {schema: SuggestMoveOutputSchema},
   prompt: `Du bist eine strategische Spiel-KI für "Savannah Chase" (Version 0.4 GDD mit zufälligen Klüften und neuen Sumpf-/Hügel-Regeln).
-Das Brett ist ein 7x7 Gitter. KI-Spieler (W, Weiß) Figuren starten auf Reihe 0/1 und Mensch-Spieler (B, Schwarz) Figuren starten auf Reihe 6/5.
+Das Brett ist ein 7x7 Gitter. KI-Spieler (B, Schwarz) Figuren starten auf Reihe 0/1 und Mensch-Spieler (W, Weiß) Figuren starten auf Reihe 6/5.
 Figuren:
 - Löwe (L): Zieht 1-2 Felder (orthogonal/diagonal). Kann nicht springen. Muss 1 Zug nach Bewegung pausieren. Nur von gegn. Löwe oder Giraffe schlagbar. Wenn er auf Sumpf (S) landet, muss er nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (orthogonal). Kann nicht springen. Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
-- Gazelle (Z): KI (Weiß, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Mensch (Schwarz, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diagonal vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
+- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Mensch (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diagonal vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 
-Spieler: Mensch (B, Schwarz, Unten), KI (W, Weiß, Oben). Figurennotation: SpielerinitialTiercharakter (z.B. BZ, WL, WG).
+Spieler: Spieler (W, Weiß, Unten), KI (B, Schwarz, Oben). Figurennotation: SpielerinitialTiercharakter (z.B. WZ, BL, BG).
 '..' bezeichnet ein leeres Feld.
 Terrain:
 'K' (Kluft): Landet eine Figur hier, wird sie in eine spezifische, zufällig bestimmte Richtung (N, S, E oder W) geschoben, bis sie auf ein Hindernis trifft. Schlägt nicht.
@@ -53,15 +53,15 @@ Siegbedingungen:
 1. Gegnerischen Löwen schlagen.
 2. Alle 5 gegnerischen Gazellen schlagen.
 
-Aktueller Spielzustand (0-indizierte Reihen von KI Weiß oben, 0-indizierte Spalten von links, Zellen in einer Reihe durch Leerzeichen getrennt):
+Aktueller Spielzustand (0-indizierte Reihen von KI Schwarz oben, 0-indizierte Spalten von links, Zellen in einer Reihe durch Leerzeichen getrennt):
 {{{boardState}}}
 
 Es ist {{{playerTurn}}} am Zug.
 Berücksichtige, ob Figuren von {{{playerTurn}}} pausieren (Löwe wegen eigenem Zug, oder Löwe/Gazelle wegen Landung auf Sumpf). Eine pausierende Figur kann nicht ziehen.
 
 Analysiere das Brett und schlage den bestmöglichen Zug für {{{playerTurn}}} vor.
-Der vorgeschlagene Zug sollte in einem klaren, handlungsorientierten Format beschrieben werden, mit Angabe der Figur, ihrer Start- und Endkoordinaten. Z.B. "Bewege Gazelle von (1,1) nach (2,1)" oder "Bewege Löwe von (0,3) nach (3,3) um Giraffe zu schlagen".
-Wenn eine Schlüsselfigur pausiert, erwähne dies, z.B. "Löwe bei (2,2) ist pausiert. Schlage vor, Gazelle von (1,1) nach (2,1) zu bewegen."
+Der vorgeschlagene Zug sollte in einem klaren, handlungsorientierten Format beschrieben werden, mit Angabe der Figur, ihrer Start- und Endkoordinaten (Format: SpaltenbuchstabeZeilennummer, z.B. A1, G7). Beispiel: "Bewege Gazelle von B6 nach B5" oder "Bewege Löwe von D1 nach D4 um Giraffe zu schlagen".
+Wenn eine Schlüsselfigur pausiert, erwähne dies, z.B. "Löwe bei C3 ist pausiert. Schlage vor, Gazelle von B6 nach B5 zu bewegen."
 Wenn für {{{playerTurn}}} keine gültigen Züge möglich sind, gib das klar an.
 
 Priorisiere Züge in dieser Reihenfolge:

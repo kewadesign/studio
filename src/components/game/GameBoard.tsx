@@ -14,7 +14,7 @@ interface GameBoardProps {
   onSquareClick: (row: number, col: number) => void;
   currentPlayer: GameState['currentPlayer'];
   isGameOver: boolean;
-  getAnimalChar: (animal: AnimalType) => string; // Add this prop
+  getAnimalChar: (animal: AnimalType) => string; 
 }
 
 const getTerrainDisplayChar = (terrain: TerrainType): string => {
@@ -37,7 +37,6 @@ const getTerrainColorClass = (terrain: TerrainType): string => {
 
 const RiftArrowIcon: React.FC<{direction?: RiftDirection, className?: string}> = ({ direction, className }) => {
   if (!direction) return null;
-  // Adjust icon size for smaller board cells
   const iconSize = 14;
   if (direction.dRow === -1 && direction.dCol === 0) return <ArrowUp size={iconSize} className={className} />; // North
   if (direction.dRow === 1 && direction.dCol === 0) return <ArrowDown size={iconSize} className={className} />;  // South
@@ -54,7 +53,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onSquareClick,
   currentPlayer,
   isGameOver,
-  getAnimalChar, // Destructure prop
+  getAnimalChar, 
 }) => {
   const gridColsClass = `grid-cols-${BOARD_SIZE}`; 
 
@@ -74,8 +73,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
         let cursorClass = 'cursor-default';
 
         if (isValidMove) {
-          squareBgClass = 'bg-green-400/50 dark:bg-green-600/50'; 
-          cursorClass = 'cursor-pointer hover:bg-green-500/60';
+          // Changed from green to amber (yellow-orange)
+          squareBgClass = 'bg-amber-400/50 dark:bg-amber-500/50'; 
+          cursorClass = 'cursor-pointer hover:bg-amber-500/60 dark:hover:bg-amber-600/60';
         } else if (piece && piece.player === currentPlayer && !isGameOver && currentPlayer === 'human') {
           squareBgClass += ' hover:bg-primary/20';
           cursorClass = 'cursor-pointer';
@@ -92,13 +92,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
             onClick={() => !isGameOver && onSquareClick(square.row, square.col)}
             role="button"
             tabIndex={0}
-            aria-label={`Square ${square.row + 1}, ${String.fromCharCode(97 + square.col)}${piece ? `, contains ${piece.player} ${piece.animal}` : ''}${square.terrain !== 'none' && !piece ? `, terrain: ${square.terrain}` : ''}${isValidMove ? ', valid move' : ''}`}
+            aria-label={`Feld ${square.row + 1}, ${String.fromCharCode(65 + square.col)}${piece ? `, enthält ${piece.player} ${piece.animal}` : ''}${square.terrain !== 'none' && !piece ? `, Terrain: ${square.terrain}` : ''}${isValidMove ? ', gültiger Zug' : ''}`}
           >
             {piece && (
               <GamePiece 
                 piece={piece} 
                 isSelected={isSelected}
-                displayChar={getAnimalChar(piece.animal)} // Pass displayChar
+                displayChar={getAnimalChar(piece.animal)} 
               />
             )}
             {!piece && square.terrain !== 'none' && (
@@ -119,5 +119,3 @@ const GameBoard: React.FC<GameBoardProps> = ({
 };
 
 export default GameBoard;
-
-    
