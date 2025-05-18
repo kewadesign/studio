@@ -9,29 +9,31 @@ interface GamePieceProps {
 }
 
 const GamePiece: React.FC<GamePieceProps> = ({ piece, isSelected, displayChar }) => {
-  // Base classes for the piece: Ensure it's a square then make it round
-  // Reduced width to make pieces "a bit smaller"
   const baseClasses =
     'w-[80%] aspect-square flex items-center justify-center rounded-full transition-all duration-200 ease-in-out text-2xl sm:text-3xl font-bold shadow-lg';
 
-  // New radial gradient for a less intense, orange-brown look
-  // Applied to all pieces for a unified style
-  const pieceGradient = 'bg-[radial-gradient(ellipse_at_center,_#D9B38C_20%,_#BF8040_100%)]';
+  // Conditional styling based on the player
+  let pieceSpecificClasses = '';
+  let textSpecificClasses = '';
 
-  // Text color is white for good contrast with the new gradient
-  const textColor = 'text-white';
+  if (piece.player === 'human') { // Player's pieces (lighter)
+    pieceSpecificClasses = 'bg-[radial-gradient(ellipse_at_center,_hsl(var(--card))_40%,_hsl(var(--primary))_100%)]'; // Light tan/beige to muted gold
+    textSpecificClasses = 'text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.6)]';
+  } else { // AI's pieces (darker)
+    pieceSpecificClasses = 'bg-[radial-gradient(ellipse_at_center,_hsl(var(--muted))_40%,_hsl(var(--foreground))_100%)]'; // Muted tan/gray to dark brown
+    textSpecificClasses = 'text-black drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]';
+  }
 
-  // Selection-specific styling
   const selectionClasses = isSelected
     ? 'ring-4 ring-offset-background ring-yellow-400 scale-110 shadow-xl'
     : 'hover:shadow-xl';
 
   return (
     <div
-      className={`${baseClasses} ${pieceGradient} ${textColor} ${selectionClasses}`}
+      className={`${baseClasses} ${pieceSpecificClasses} ${selectionClasses}`}
       aria-label={`${piece.player} ${piece.animal}`}
     >
-      <span className="drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+      <span className={textSpecificClasses}>
         {displayChar}
       </span>
     </div>
