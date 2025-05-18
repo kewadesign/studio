@@ -15,9 +15,9 @@ import {z}from 'genkit';
 const AnalyzeGameStateInputSchema = z.object({
   boardState: z
     .string()
-    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, AI White side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., BZ for Human Gazelle, WL for AI Lion, WG for AI Giraffe). Empty: "..". Terrain: K=Kluft (pushes piece in a game-defined random direction if landed on), S=Sumpf (Lions/Gazelles pause next turn, Giraffes cannot enter), H=Hügel (ONLY Giraffes can enter).'),
-  playerOneName: z.string().describe('The name of player one (AI, White, Top).'),
-  playerTwoName: z.string().describe('The name of player two (Human, Black, Bottom).'),
+    .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Weiß), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. BZ für Menschliche Gazelle, WL für KI Löwe, WG für KI Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
+  playerOneName: z.string().describe('Der Name von Spieler Eins (KI, Weiß, Oben).'),
+  playerTwoName: z.string().describe('Der Name von Spieler Zwei (Mensch, Schwarz, Unten).'),
 });
 export type AnalyzeGameStateInput = z.infer<typeof AnalyzeGameStateInputSchema>;
 
@@ -41,50 +41,50 @@ export async function analyzeGameState(
 }
 
 const prompt = ai.definePrompt({
-  name: 'analyzeGameStatePrompt_v0_4_randomRiftsAndSwampRules',
+  name: 'analyzeGameStatePrompt_v0_4_randomRiftsAndSwampRules_DE',
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
-  prompt: `You are an expert game analyst for "Savannah Chase" (Version 0.4 GDD, with randomized rifts and new swamp/hill rules).
-The board is 7x7. AI (W, White) starts rows 0/1. Human (B, Black) starts rows 6/5.
-Pieces:
-- Lion (L): Moves 1-2 squares (any dir). Pauses 1 turn after moving. Capturable only by Lion/Giraffe. If lands on Sumpf (S), pauses next turn. Cannot enter Hügel (H).
-- Giraffe (G): Moves max 2 squares (H/V). Cannot enter Sumpf (S) squares. CAN enter Hügel (H) squares. Cannot jump over a Kluft (K) in a 2-square move if the intermediate square is a Kluft.
-- Gazelle (Z): AI (White, Top) Gazelles move 1 square "forward" (increasing row index). Human (Black, Bottom) Gazelles move 1 square "forward" (decreasing row index). Captures 1 diag forward. Cannot capture Lion. If lands on Sumpf (S), pauses next turn. Cannot enter Hügel (H).
+  prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und neuen Sumpf-/Hügel-Regeln).
+Das Brett ist 7x7 groß. KI (W, Weiß) startet in den Reihen 0/1. Mensch (B, Schwarz) startet in den Reihen 6/5.
+Figuren:
+- Löwe (L): Zieht 1-2 Felder (jede Richtung). Pausiert 1 Zug nach Bewegung. Nur von Löwe/Giraffe schlagbar. Wenn er auf Sumpf (S) landet, pausiert er nächste Runde. Kann Hügel (H) nicht betreten.
+- Giraffe (G): Zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
+- Gazelle (Z): KI (Weiß, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Mensch (Schwarz, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diag. vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
 Terrain:
-'K' (Kluft/Rift): If a piece lands here, it's pushed in a specific, randomly determined direction (N, S, E, or W) until it hits an obstacle. Does not capture.
-'S' (Sumpf/Swamp): If a Lion or Gazelle lands here, they must pause their next turn. Giraffes cannot enter Sumpf squares.
-'H' (Hügel/Hill): ONLY Giraffes can enter this terrain. Lions and Gazelles cannot.
-Win: Capture enemy Lion OR all 5 enemy Gazelles.
+'K' (Kluft): Landet eine Figur hier, wird sie in eine spezifische, zufällig bestimmte Richtung (N, S, E oder W) geschoben, bis sie auf ein Hindernis trifft. Schlägt nicht.
+'S' (Sumpf): Landen Löwe oder Gazelle hier, müssen sie nächste Runde pausieren. Giraffen können Sumpf nicht betreten.
+'H' (Hügel): NUR Giraffen können dieses Terrain betreten. Löwen und Gazellen nicht.
+Sieg: Gegnerischen Löwen ODER alle 5 gegn. Gazellen schlagen.
 
-Board State (0-indexed rows from AI White top, 0-indexed columns from left):
+Spielbrett (0-indizierte Reihen von KI Weiß oben, 0-indizierte Spalten von links):
 {{{boardState}}}
 
-Player One: {{{playerOneName}}} (AI, White, Top)
-Player Two: {{{playerTwoName}}} (Human, Black, Bottom)
+Spieler Eins: {{{playerOneName}}} (KI, Weiß, Oben)
+Spieler Zwei: {{{playerTwoName}}} (Mensch, Schwarz, Unten)
 
-Analyze the board state. Provide:
-1. A summary for {{{playerOneName}}} (advantages/disadvantages, piece safety, threats, progress to win).
-2. A summary for {{{playerTwoName}}} (same as above).
-3. A brief overall assessment of who might be in a better position.
+Analysiere den Spielzustand. Liefere:
+1. Eine Zusammenfassung für {{{playerOneName}}} (Vor-/Nachteile, Figurensicherheit, Bedrohungen, Fortschritt zum Sieg).
+2. Eine Zusammenfassung für {{{playerTwoName}}} (wie oben).
+3. Eine kurze Gesamtbewertung, wer in einer besseren Position sein könnte.
 
-Consider material advantage, positional strength, king (Lion) safety, and threats.
-Factor in the Sumpf rules (pause for Lion/Gazelle, no entry for Giraffe).
-Factor in the Hügel rules (ONLY Giraffes can enter).
-Factor in the Kluft rules (push effect, variable direction, Giraffe cannot jump over).
-Be concise and strategic.
+Berücksichtige Materialvorteil, Positionsstärke, Sicherheit des Königs (Löwe) und Bedrohungen.
+Beziehe die Sumpf-Regeln ein (Pause für Löwe/Gazelle, kein Betreten für Giraffe).
+Beziehe die Hügel-Regeln ein (NUR Giraffen können betreten).
+Beziehe die Kluft-Regeln ein (Schiebeeffekt, variable Richtung, Giraffe kann nicht überspringen).
+Sei prägnant und strategisch. Antworte auf Deutsch.
 `,
 });
 
 const analyzeGameStateFlow = ai.defineFlow(
   {
-    name: 'analyzeGameStateFlow_v0_4_randomRiftsAndSwampRules',
+    name: 'analyzeGameStateFlow_v0_4_randomRiftsAndSwampRules_DE',
     inputSchema: AnalyzeGameStateInputSchema,
     outputSchema: AnalyzeGameStateOutputSchema,
   },
   async input => {
     const {output} = await prompt(input);
     if (!output || !output.playerOneSummary || !output.playerTwoSummary || !output.overallAssessment) {
-        console.error('AI analysis failed to produce complete output. Input:', input, 'Raw Output:', output);
+        console.error('KI-Analyse konnte keine vollständige Ausgabe erzeugen. Eingabe:', input, 'Rohe Ausgabe:', output);
         return {
             playerOneSummary: "Analysedaten unvollständig.",
             playerTwoSummary: "Analysedaten unvollständig.",

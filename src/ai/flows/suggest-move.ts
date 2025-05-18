@@ -15,10 +15,10 @@ import {z}from 'genkit';
 const SuggestMoveInputSchema = z.object({
   boardState: z
     .string()
-    .describe('The current state of the 7x7 game board as a string. Rows 0-indexed (top, AI White side), cols 0-indexed (left). Cells by spaces, rows by newlines. Format: PlayerInitialAnimalChar (e.g., BZ for Human Gazelle, WL for AI Lion, WG for AI Giraffe). Empty: "..". Terrain: K=Kluft (pushes piece in a game-defined random direction if landed on), S=Sumpf (Lions/Gazelles pause next turn, Giraffes cannot enter), H=Hügel (ONLY Giraffes can enter).'),
+    .describe('Der aktuelle Zustand des 7x7 Spielbretts als Zeichenkette. Reihen 0-indiziert (oben, KI Weiß), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. BZ für Menschliche Gazelle, WL für KI Löwe, WG für KI Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
   playerTurn: z
     .string()
-    .describe('The name of the player whose turn it is (e.g., Human Player (Black, Bottom), AI Opponent (White, Top)). Include info if their Lion or another piece is paused (e.g., by Sumpf).'),
+    .describe('Der Name des Spielers, der am Zug ist (z.B. Menschlicher Spieler (Schwarz, Unten), KI-Gegner (Weiß, Oben)). Gib an, ob der Löwe oder eine andere Figur pausiert (z.B. durch Sumpf).'),
 });
 export type SuggestMoveInput = z.infer<typeof SuggestMoveInputSchema>;
 
@@ -32,61 +32,61 @@ export async function suggestMove(input: SuggestMoveInput): Promise<SuggestMoveO
 }
 
 const prompt = ai.definePrompt({
-  name: 'suggestMovePrompt_v0_4_randomRiftsAndSwampRules',
+  name: 'suggestMovePrompt_v0_4_randomRiftsAndSwampRules_DE',
   input: {schema: SuggestMoveInputSchema},
   output: {schema: SuggestMoveOutputSchema},
-  prompt: `You are a strategic game AI for "Savannah Chase" (Version 0.4 GDD with randomized rifts and new swamp/hill rules).
-The board is a 7x7 grid. AI player (W, White) pieces start at row 0/1 and Human player (B, Black) pieces start at row 6/5.
-Pieces:
-- Lion (L): Moves 1-2 squares (orthogonally/diagonally). Cannot jump. Must pause for 1 turn after moving. Can be captured ONLY by an enemy Lion or Giraffe. If lands on Sumpf (S), must pause its next turn. Cannot enter Hügel (H).
-- Giraffe (G): Moves max 2 squares (orthogonally). Cannot jump. Cannot enter Sumpf (S) squares. CAN enter Hügel (H) squares. Cannot jump over a Kluft (K) in a 2-square move if the intermediate square is a Kluft.
-- Gazelle (Z): AI (White, Top) Gazelles move 1 square "forward" (increasing row index). Human (Black, Bottom) Gazelles move 1 square "forward" (decreasing row index). Captures 1 square diagonally forward. Cannot capture a Lion. If lands on Sumpf (S), must pause its next turn. Cannot enter Hügel (H).
+  prompt: `Du bist eine strategische Spiel-KI für "Savannah Chase" (Version 0.4 GDD mit zufälligen Klüften und neuen Sumpf-/Hügel-Regeln).
+Das Brett ist ein 7x7 Gitter. KI-Spieler (W, Weiß) Figuren starten auf Reihe 0/1 und Mensch-Spieler (B, Schwarz) Figuren starten auf Reihe 6/5.
+Figuren:
+- Löwe (L): Zieht 1-2 Felder (orthogonal/diagonal). Kann nicht springen. Muss 1 Zug nach Bewegung pausieren. Nur von gegn. Löwe oder Giraffe schlagbar. Wenn er auf Sumpf (S) landet, muss er nächste Runde pausieren. Kann Hügel (H) nicht betreten.
+- Giraffe (G): Zieht max. 2 Felder (orthogonal). Kann nicht springen. Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
+- Gazelle (Z): KI (Weiß, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Mensch (Schwarz, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diagonal vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, muss sie nächste Runde pausieren. Kann Hügel (H) nicht betreten.
 
-Players: Human (B, Black, Bottom), AI (W, White, Top). Piece notation: PlayerInitialAnimalChar (e.g., BZ, WL, WG).
-'..' denotes an empty square.
+Spieler: Mensch (B, Schwarz, Unten), KI (W, Weiß, Oben). Figurennotation: SpielerinitialTiercharakter (z.B. BZ, WL, WG).
+'..' bezeichnet ein leeres Feld.
 Terrain:
-'K' (Kluft/Rift): If a piece lands here, it's pushed in a specific, randomly determined direction (N, S, E, or W) until it hits an obstacle. Does not capture.
-'S' (Sumpf/Swamp): If a Lion or Gazelle lands here, they must pause their next turn. Giraffes cannot enter Sumpf squares.
-'H' (Hügel/Hill): ONLY Giraffes can enter this terrain. Lions and Gazelles cannot.
+'K' (Kluft): Landet eine Figur hier, wird sie in eine spezifische, zufällig bestimmte Richtung (N, S, E oder W) geschoben, bis sie auf ein Hindernis trifft. Schlägt nicht.
+'S' (Sumpf): Landen Löwe oder Gazelle hier, müssen sie nächste Runde pausieren. Giraffen können Sumpf nicht betreten.
+'H' (Hügel): NUR Giraffen können dieses Terrain betreten. Löwen und Gazellen nicht.
 
-Win Conditions:
-1. Capture the opponent's Lion.
-2. Capture all 5 of the opponent's Gazelles.
+Siegbedingungen:
+1. Gegnerischen Löwen schlagen.
+2. Alle 5 gegnerischen Gazellen schlagen.
 
-Current Board State (0-indexed rows from AI White top, 0-indexed columns from left, cells in a row separated by spaces):
+Aktueller Spielzustand (0-indizierte Reihen von KI Weiß oben, 0-indizierte Spalten von links, Zellen in einer Reihe durch Leerzeichen getrennt):
 {{{boardState}}}
 
-It is {{{playerTurn}}}'s turn.
-Consider if any pieces of {{{playerTurn}}} are paused (Lion due to its own move, or Lion/Gazelle due to landing on a Sumpf). A paused piece cannot move.
+Es ist {{{playerTurn}}} am Zug.
+Berücksichtige, ob Figuren von {{{playerTurn}}} pausieren (Löwe wegen eigenem Zug, oder Löwe/Gazelle wegen Landung auf Sumpf). Eine pausierende Figur kann nicht ziehen.
 
-Analyze the board and suggest the best possible move for {{{playerTurn}}}.
-The suggested move should be described in a clear, actionable format, specifying the piece, its start and end coordinates. E.g., "Move Gazelle from (1,1) to (2,1)" or "Move Lion from (0,3) to (3,3) to capture Giraffe".
-If a key piece is paused, mention it, e.g., "Lion at (2,2) is paused. Suggest moving Gazelle from (1,1) to (2,1)."
-If no valid moves are possible for {{{playerTurn}}}, state that clearly.
+Analysiere das Brett und schlage den bestmöglichen Zug für {{{playerTurn}}} vor.
+Der vorgeschlagene Zug sollte in einem klaren, handlungsorientierten Format beschrieben werden, mit Angabe der Figur, ihrer Start- und Endkoordinaten. Z.B. "Bewege Gazelle von (1,1) nach (2,1)" oder "Bewege Löwe von (0,3) nach (3,3) um Giraffe zu schlagen".
+Wenn eine Schlüsselfigur pausiert, erwähne dies, z.B. "Löwe bei (2,2) ist pausiert. Schlage vor, Gazelle von (1,1) nach (2,1) zu bewegen."
+Wenn für {{{playerTurn}}} keine gültigen Züge möglich sind, gib das klar an.
 
-Prioritize moves in this order:
-1. A move that wins the game (captures enemy Lion or last enemy Gazelle).
-2. A move that captures a high-value piece (Lion > Giraffe > Gazelle) safely.
-3. A move that blocks an opponent's immediate winning move.
-4. A move that sets up a strong offensive or defensive position, considering terrain. Landing on a Kluft (K) can be risky or advantageous. Avoid moving Lions/Gazelles onto Sumpf (S) if other good moves exist, due to the pause. Giraffes can use Hügel (H) squares strategically, as other pieces cannot.
-5. A move that develops a piece towards a useful area or captures a less valuable piece.
-6. Any other valid move. Avoid moving into obvious danger if better options exist.
-If a piece is paused, do not suggest moving it.
+Priorisiere Züge in dieser Reihenfolge:
+1. Ein Zug, der das Spiel gewinnt (gegnerischen Löwen oder letzte gegnerische Gazelle schlägt).
+2. Ein Zug, der eine hochwertige Figur (Löwe > Giraffe > Gazelle) sicher schlägt.
+3. Ein Zug, der einen sofortigen Gewinnzug des Gegners blockiert.
+4. Ein Zug, der eine starke offensive oder defensive Position aufbaut, unter Berücksichtigung des Terrains. Landung auf einer Kluft (K) kann riskant oder vorteilhaft sein. Vermeide es, Löwen/Gazellen auf Sumpf (S) zu bewegen, wenn andere gute Züge existieren, wegen der Pause. Giraffen können Hügel (H) strategisch nutzen, da andere Figuren dies nicht können.
+5. Ein Zug, der eine Figur in einen nützlichen Bereich entwickelt oder eine weniger wertvolle Figur schlägt.
+6. Jeder andere gültige Zug. Vermeide es, in offensichtliche Gefahr zu ziehen, wenn bessere Optionen bestehen.
+Wenn eine Figur pausiert, schlage nicht vor, sie zu bewegen.
 
-Provide only the suggested move text.
+Antworte auf Deutsch und liefere nur den vorgeschlagenen Zugtext.
 `,
 });
 
 const suggestMoveFlow = ai.defineFlow(
   {
-    name: 'suggestMoveFlow_v0_4_randomRiftsAndSwampRules',
+    name: 'suggestMoveFlow_v0_4_randomRiftsAndSwampRules_DE',
     inputSchema: SuggestMoveInputSchema,
     outputSchema: SuggestMoveOutputSchema,
   },
   async (input) => {
     const {output} = await prompt(input);
     if (!output || typeof output.suggestedMove !== 'string') {
-      console.error('AI failed to produce a valid suggestedMove output. Input:', input, 'Raw Output:', output);
+      console.error('KI konnte keine gültige suggestedMove-Ausgabe produzieren. Eingabe:', input, 'Rohe Ausgabe:', output);
       return { suggestedMove: `KI konnte keinen Zug für ${input.playerTurn} ermitteln. Bitte versuche es erneut oder mache einen manuellen Zug.` };
     }
     return output;
