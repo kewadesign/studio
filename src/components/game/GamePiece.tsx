@@ -9,31 +9,39 @@ interface GamePieceProps {
 }
 
 const GamePiece: React.FC<GamePieceProps> = ({ piece, isSelected, displayChar }) => {
-  // Base classes for the piece
-  // Removed border-2 from here
-  const baseClasses = "w-10/12 h-10/12 flex items-center justify-center rounded-full transition-all duration-200 ease-in-out text-2xl sm:text-3xl font-bold shadow-lg";
+  // Base classes for the piece: Ensure it's a square then make it round
+  // Using w-[85%] and aspect-square to maintain a circle within the parent cell
+  const baseClasses =
+    'w-[85%] aspect-square flex items-center justify-center rounded-full transition-all duration-200 ease-in-out text-2xl sm:text-3xl font-bold shadow-lg text-white';
 
-  // Player-specific styling
-  // Player 'human' (White, Bottom) uses Primary theme colors for their pieces.
-  // Player 'ai' (Black, Top) uses Accent theme colors for their pieces.
-  let playerSpecificClasses = "";
-  if (piece.player === 'human') { // Human is White (Bottom)
-    // Removed border-primary-foreground
-    playerSpecificClasses = "bg-gradient-to-br from-primary/90 via-primary to-primary/70 text-primary-foreground hover:from-primary hover:to-primary/80";
-  } else { // AI is Black (Top)
-    // Removed border-accent-foreground
-    playerSpecificClasses = "bg-gradient-to-br from-accent/90 via-accent to-accent/70 text-accent-foreground hover:from-accent hover:to-accent/80";
+  // Player-specific styling with custom gradients
+  // Player 'human' (White, Bottom)
+  // Gradient: Red to Orange/Yellow
+  const humanPlayerGradient = 'bg-[linear-gradient(90deg,rgba(253,29,29,1)_28%,rgba(252,176,69,1)_100%)]';
+  // AI 'ai' (Black, Top)
+  // Gradient: Red to Purple
+  const aiPlayerGradient = 'bg-[linear-gradient(90deg,rgba(253,29,29,1)_29%,rgba(148,69,252,1)_62%)]';
+
+  let playerSpecificClasses = '';
+  if (piece.player === 'human') { // Human (White, Bottom)
+    playerSpecificClasses = `${humanPlayerGradient} hover:opacity-90`;
+  } else { // AI (Black, Top)
+    playerSpecificClasses = `${aiPlayerGradient} hover:opacity-90`;
   }
 
   // Selection-specific styling
-  const selectionClasses = isSelected ? "ring-4 ring-offset-background ring-ring scale-110 shadow-xl" : "hover:shadow-xl";
+  const selectionClasses = isSelected
+    ? 'ring-4 ring-offset-background ring-yellow-400 scale-110 shadow-xl' // Changed ring to yellow-400
+    : 'hover:shadow-xl';
 
   return (
     <div
       className={`${baseClasses} ${playerSpecificClasses} ${selectionClasses}`}
       aria-label={`${piece.player} ${piece.animal}`}
     >
-      {displayChar}
+      <span className="drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+        {displayChar}
+      </span>
     </div>
   );
 };
