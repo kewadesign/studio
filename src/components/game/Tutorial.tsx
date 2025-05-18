@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Sparkles, Shield, TrendingUp, Mountain, Waves, Wind } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Shield, TrendingUp, Mountain, Waves, Wind, SkipForward } from 'lucide-react';
 
 interface TutorialProps {
   onStartGame: () => void;
@@ -24,12 +24,12 @@ const tutorialSteps = [
   {
     icon: <TrendingUp className="inline-block mr-2 text-blue-500" />,
     title: 'Die Giraffe (G)',
-    content: 'Die Giraffe zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten und auch nicht darüber springen. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.',
+    content: 'Die Giraffe zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten und auch nicht darüber springen, wenn es das Zwischenfeld eines 2-Felder-Zugs ist. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.',
   },
   {
     icon: <Sparkles className="inline-block mr-2 text-green-500" />,
     title: 'Die Gazelle (Z)',
-    content: 'Die Gazelle zieht 1 Feld gerade vorwärts. Zum Schlagen springt sie 1 Feld diagonal vorwärts. Gazellen können keine Löwen und keine Giraffen fangen! Sie können aber andere Gazellen fangen.',
+    content: 'Die Gazelle zieht 1 Feld gerade vorwärts. Zum Schlagen springt sie 1 Feld diagonal vorwärts. Gazellen können gegnerische Gazellen schlagen, aber keine Löwen oder Giraffen.',
   },
   {
     icon: <Mountain className="inline-block mr-2 text-yellow-700" />,
@@ -39,12 +39,12 @@ const tutorialSteps = [
   {
     icon: <Waves className="inline-block mr-2 text-emerald-600" />,
     title: 'Spezialfeld: Sumpf (S)',
-    content: 'Betritt ein Löwe oder eine Gazelle einen Sumpf (S), müssen sie in ihrem nächsten Zug aussetzen. Giraffen dürfen Sümpfe gar nicht erst betreten.',
+    content: 'Betritt ein Löwe oder eine Gazelle einen Sumpf (S), müssen sie in ihrem nächsten Zug aussetzen. Giraffen dürfen Sümpfe gar nicht erst betreten und auch nicht darüber springen.',
   },
   {
     icon: <Wind className="inline-block mr-2 text-destructive" />,
     title: 'Spezialfeld: Kluft (K)',
-    content: 'Klüfte (K) sind knifflig! Landest du auf einer, wirst du in Pfeilrichtung weitergeschoben, bis du auf ein Hindernis triffst. Giraffen können sie nicht einfach überspringen.',
+    content: 'Klüfte (K) sind knifflig! Landest du auf einer, wirst du in die angezeigte Pfeilrichtung weitergeschoben, bis du auf ein Hindernis triffst. Giraffen können sie nicht einfach überspringen.',
   },
   {
     icon: <Sparkles className="inline-block mr-2" />,
@@ -82,16 +82,21 @@ const Tutorial: React.FC<TutorialProps> = ({ onStartGame }) => {
         <CardContent className="text-base sm:text-lg text-card-foreground">
           <p>{step.content}</p>
         </CardContent>
-        <CardFooter className="flex justify-between pt-4">
-          <Button onClick={handlePrev} disabled={currentStep === 0} variant="outline">
+        <CardFooter className="flex justify-between items-center pt-4">
+          <Button onClick={handlePrev} disabled={currentStep === 0} variant="outline" className="w-1/3">
             <ChevronLeft className="mr-1 h-5 w-5" /> Zurück
           </Button>
           {currentStep < tutorialSteps.length - 1 ? (
-            <Button onClick={handleNext}>
-              Weiter <ChevronRight className="ml-1 h-5 w-5" />
-            </Button>
+            <>
+              <Button onClick={onStartGame} variant="secondary" className="w-1/3">
+                <SkipForward className="mr-1 h-5 w-5" /> Überspringen
+              </Button>
+              <Button onClick={handleNext} className="w-1/3">
+                Weiter <ChevronRight className="ml-1 h-5 w-5" />
+              </Button>
+            </>
           ) : (
-            <Button onClick={onStartGame} className="bg-green-600 hover:bg-green-700 text-white">
+            <Button onClick={onStartGame} className="bg-green-600 hover:bg-green-700 text-white w-full">
               Spiel starten!
             </Button>
           )}
