@@ -49,13 +49,13 @@ export interface GameState {
   message: string;
 }
 
-export const BOARD_ROWS = 7;
-export const BOARD_COLS = 8;
+export const BOARD_ROWS = 8;
+export const BOARD_COLS = 7;
 
 export const NUM_RANDOM_SWAMPS = 3;
 export const NUM_RANDOM_HILLS = 2;
 export const NUM_RANDOM_RIFTS = 2;
 
-// Rows restricted from having random terrain placed on them (player starting rows)
-// AI (Schwarz, Oben) on rows 0,1. Spieler (Weiß, Unten) on rows 5,6 (for 7 total rows).
+// Rows restricted from having random terrain placed on them
+// AI (Schwarz, Oben) on rows 0,1. Spieler (Weiß, Unten) on rows 6,7 (for 8 total rows, 0-indexed).
 export const TERRAIN_RESTRICTED_ROWS: number[] = [0, 1, BOARD_ROWS - 2, BOARD_ROWS - 1];

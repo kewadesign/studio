@@ -14,7 +14,7 @@ const tutorialSteps = [
   {
     icon: <Sparkles className="inline-block mr-2 text-yellow-500" />,
     title: 'Willkommen bei Savannah Chase!',
-    content: 'Dein Ziel: Fange den gegnerischen Löwen ODER alle 5 gegnerischen Gazellen. Du spielst mit den schwarzen Figuren unten.',
+    content: 'Dein Ziel: Fange den gegnerischen Löwen ODER alle 5 gegnerischen Gazellen. Du spielst mit den weißen Figuren unten.',
   },
   {
     icon: <Shield className="inline-block mr-2 text-red-500" />,
@@ -29,7 +29,7 @@ const tutorialSteps = [
   {
     icon: <Sparkles className="inline-block mr-2 text-green-500" />,
     title: 'Die Gazelle (Z)',
-    content: 'Die Gazelle zieht 1 Feld gerade vorwärts. Zum Schlagen springt sie 1 Feld diagonal vorwärts. Gazellen können keine Löwen fangen und keine Hügel betreten!',
+    content: 'Die Gazelle zieht 1 Feld gerade vorwärts. Zum Schlagen springt sie 1 Feld diagonal vorwärts. Gazellen können keine Löwen und keine Giraffen fangen! Sie können aber andere Gazellen fangen.',
   },
   {
     icon: <Mountain className="inline-block mr-2 text-yellow-700" />,

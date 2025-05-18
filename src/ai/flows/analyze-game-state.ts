@@ -15,7 +15,7 @@ import {z}from 'genkit';
 const AnalyzeGameStateInputSchema = z.object({
   boardState: z
     .string()
-    .describe('Der aktuelle Zustand des 7x8 Spielbretts (7 Reihen, 8 Spalten) als Zeichenkette. Reihen 0-indiziert (oben, KI Schwarz), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. WZ für Spieler (Weiß) Gazelle, BL für KI (Schwarz) Löwe, BG für KI (Schwarz) Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
+    .describe('Der aktuelle Zustand des 8x7 Spielbretts (8 Reihen, 7 Spalten) als Zeichenkette. Reihen 0-indiziert (oben, KI Schwarz), Spalten 0-indiziert (links). Zellen durch Leerzeichen, Reihen durch Zeilenumbrüche. Format: SpielerinitialTierinitial (z.B. WZ für Spieler (Weiß) Gazelle, BL für KI (Schwarz) Löwe, BG für KI (Schwarz) Giraffe). Leer: "..". Terrain: K=Kluft (verschiebt Figur in eine spieldefinierte zufällige Richtung, wenn darauf gelandet), S=Sumpf (Löwen/Gazellen pausieren nächste Runde, Giraffen können nicht betreten), H=Hügel (NUR Giraffen können betreten).'),
   playerOneName: z.string().describe('Der Name von Spieler Eins (KI, Schwarz, Oben).'),
   playerTwoName: z.string().describe('Der Name von Spieler Zwei (Spieler, Weiß, Unten).'),
 });
@@ -41,15 +41,15 @@ export async function analyzeGameState(
 }
 
 const prompt = ai.definePrompt({
-  name: 'analyzeGameStatePrompt_v0_4_7x8_randomTerrains_DE',
+  name: 'analyzeGameStatePrompt_v0_4_8x7_randomTerrains_DE',
   input: {schema: AnalyzeGameStateInputSchema},
   output: {schema: AnalyzeGameStateOutputSchema},
-  prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und Sumpf-/Hügel-Regeln auf einem 7x8 Brett).
-Das Brett ist 7x8 groß (7 Reihen, 8 Spalten). KI (B, Schwarz, {{{playerOneName}}}) startet in den Reihen 0/1. Spieler (W, Weiß, {{{playerTwoName}}}) startet in den Reihen 6/5 (Reihe 6 ist die letzte Reihe).
+  prompt: `Du bist ein Experte für Spielanalysen für "Savannah Chase" (Version 0.4 GDD, mit zufälligen Klüften und Sumpf-/Hügel-Regeln auf einem 8x7 Brett).
+Das Brett ist 8x7 groß (8 Reihen, 7 Spalten). KI (B, Schwarz, {{{playerOneName}}}) startet in den Reihen 0/1. Spieler (W, Weiß, {{{playerTwoName}}}) startet in den Reihen 7/6 (Reihe 7 ist die letzte Reihe des Spielers).
 Figuren:
 - Löwe (L): Zieht 1-2 Felder (jede Richtung). Pausiert 1 Zug nach Bewegung. Nur von Löwe/Giraffe schlagbar. Wenn er auf Sumpf (S) landet, pausiert er nächste Runde. Kann Hügel (H) nicht betreten.
 - Giraffe (G): Zieht max. 2 Felder (H/V). Kann Sumpf (S) nicht betreten. KANN Hügel (H) betreten. Kann eine Kluft (K) bei einem 2-Felder-Zug nicht überspringen, wenn das Zwischenfeld eine Kluft ist.
-- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diag. vorwärts. Kann Löwen nicht schlagen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
+- Gazelle (Z): KI (Schwarz, Oben) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex steigt). Spieler (Weiß, Unten) Gazellen ziehen 1 Feld "vorwärts" (Reihenindex sinkt). Schlägt 1 Feld diag. vorwärts. Kann Löwen und Giraffen nicht schlagen. Wenn sie auf Sumpf (S) landet, pausiert sie nächste Runde. Kann Hügel (H) nicht betreten.
 Terrain:
 'K' (Kluft): Landet eine Figur hier, wird sie in eine spezifische, zufällig bestimmte Richtung (N, S, E oder W) geschoben, bis sie auf ein Hindernis trifft. Schlägt nicht.
 'S' (Sumpf): Landen Löwe oder Gazelle hier, müssen sie nächste Runde pausieren. Giraffen können Sumpf nicht betreten.
@@ -72,14 +72,14 @@ Beziehe die Sumpf-Regeln (Pause für Löwe/Gazelle, kein Betreten für Giraffe) 
 Beziehe die Hügel-Regeln (NUR Giraffen können betreten) und deren strategische Nutzung ein.
 Beziehe die Kluft-Regeln (Schiebeeffekt, variable Richtung, Giraffe kann nicht überspringen) und das damit verbundene Risiko/Potenzial ein.
 Sei prägnant und strategisch. Antworte auf Deutsch.
-Achte darauf, ob Figuren blockiert sind oder wenige Zugoptionen haben. Überlege, wie man Figuren befreien oder die Position verbessern kann.
-Vermeide unnötige Wiederholungen in den Zusammenfassungen.
+Achte darauf, ob Figuren blockiert sind oder wenige Zugoptionen haben. Überlege, wie man Figuren befreien oder die Position verbessern kann. Vermeide unnötige Wiederholungen in den Zusammenfassungen.
+Denke daran, dass die KI (Schwarz) oben spielt und Spieler (Weiß) unten.
 `,
 });
 
 const analyzeGameStateFlow = ai.defineFlow(
   {
-    name: 'analyzeGameStateFlow_v0_4_7x8_randomTerrains_DE',
+    name: 'analyzeGameStateFlow_v0_4_8x7_randomTerrains_DE',
     inputSchema: AnalyzeGameStateInputSchema,
     outputSchema: AnalyzeGameStateOutputSchema,
   },

@@ -15,7 +15,7 @@ interface GameBoardProps {
   isGameOver: boolean;
   getAnimalChar: (animal: AnimalType) => string;
   boardCols: number;
-  boardRows: number; // Hinzugefügt, obwohl nicht direkt für grid-cols verwendet, aber gut für Kontext
+  boardRows: number;
 }
 
 const getTerrainDisplayChar = (terrain: TerrainType): string => {
@@ -56,9 +56,10 @@ const GameBoard: React.FC<GameBoardProps> = ({
   isGameOver,
   getAnimalChar,
   boardCols,
+  // boardRows is available but not directly used for grid-cols
 }) => {
-  // Dynamische grid-cols basierend auf boardCols
-  const gridColsClass = `grid-cols-${boardCols}`;
+  // Dynamic grid-cols based on boardCols
+  const gridColsClass = `grid-cols-${boardCols}`; // e.g., grid-cols-7
 
   return (
     <div
@@ -76,7 +77,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
         let cursorClass = 'cursor-default';
 
         if (isValidMove) {
-          squareBgClass = 'bg-amber-400/50 dark:bg-amber-500/50';
+          squareBgClass = 'bg-amber-400/50 dark:bg-amber-500/50'; // Gelblich-orange für gültige Züge
           cursorClass = 'cursor-pointer hover:bg-amber-500/60 dark:hover:bg-amber-600/60';
         } else if (piece && piece.player === currentPlayer && !isGameOver && currentPlayer === 'human') {
           squareBgClass += ' hover:bg-primary/20';
